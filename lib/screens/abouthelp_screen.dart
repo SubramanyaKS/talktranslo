@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talktranslo/utils/constant.dart';
 import 'package:talktranslo/utils/language.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
@@ -28,10 +29,15 @@ class _AbouthelpScreenState extends State<AbouthelpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Translation App",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Center(
+              child: Text(HEADING.toUpperCase(),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            ),
             SizedBox(height: 8),
             Text("Version: $appVersion", style: TextStyle(fontSize: 16)),
+            SizedBox(height: 20),
+            Text("About our Application",style:TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(ABOUT),
             SizedBox(height: 20),
             Text("Frequently Asked Questions",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

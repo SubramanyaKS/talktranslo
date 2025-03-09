@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talktranslo/screens/imagetext_screen.dart';
 import 'package:talktranslo/screens/setting_screen.dart';
 import 'package:talktranslo/screens/speech_screen.dart';
 import 'package:talktranslo/screens/translate_screen.dart';
@@ -16,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const List<Widget> _pages = <Widget>[
     TranslateScreen(),
     SpeechScreen(),
+    ImageTextScreen(),
     SettingScreen(),
   ];
 
@@ -49,12 +51,17 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Speak',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.image),
+            label: 'Image',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue[800],
+        unselectedItemColor: Colors.lightBlueAccent,
         onTap: _onItemTapped,
       ),
     );
