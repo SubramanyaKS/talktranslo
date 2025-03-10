@@ -101,19 +101,4 @@ class _SpeechScreenState extends State<SpeechScreen> {
       },
     );
   }
-
-//   Future openDialog() => showDialog(
-//       context: context,
-//       builder: (context) => AlertDialog(
-//         actions: [
-//           TextButton(onPressed: (){Navigator.of(context).pop(true);}, child: Text("OK")),
-//         ],
-//             content: CustomDropdown(
-//               value: selectedLanguage,
-//               map: talklanguageMap,
-//               onChanged: (String? newValue) {
-//                 translationProvider.selectLanguage(newValue!);
-//               },
-//             ),
-//           ));
 }

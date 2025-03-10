@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:talktranslo/component/custom_dropdown.dart';
 import '../provider/translator_provider.dart';
 import '../utils/language.dart';
 
@@ -27,7 +27,9 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SizedBox(height: 20,),
             Text("Speech Rate: ${translationProvider.speechRate.toStringAsFixed(1)}"),
             Slider(
               value: translationProvider.speechRate,
@@ -40,6 +42,7 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
                 translationProvider.selectSpeedRate(value);
               },
             ),
+            SizedBox(height: 20,),
             Text("Pitch: ${translationProvider.pitch.toStringAsFixed(1)}"),
             Slider(
               value: translationProvider.pitch,
@@ -52,6 +55,7 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
                 translationProvider.selectPitch(value);
               },
             ),
+            SizedBox(height: 20,),
             Text("Voice",style: TextStyle(fontWeight: FontWeight.bold),),
             DropdownButton<String>(
               value: translationProvider.selectedVoice,
@@ -65,6 +69,22 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
                 );
               }).toList(),
             ),
+            SizedBox(height: 20,),
+            Text("Select Speech Language",style: TextStyle(fontWeight: FontWeight.bold),),
+            CustomDropdown(
+              value: translationProvider.selectedLanguage,
+              map: talklanguageMap,
+              onChanged: (String? newValue) {
+                    translationProvider.selectLanguage(newValue);
+                  },
+            ),
+            SizedBox(height: 20,),
+            Text("Select Translation Language",style: TextStyle(fontWeight: FontWeight.bold),),
+            CustomDropdown(value: translationProvider.translationLanguage, map: languageMap, onChanged: (String? newValue) {
+              setState(() {
+                translationProvider.translationLanguage = newValue!;
+              });
+            },),
           ],
         ),
       ),
