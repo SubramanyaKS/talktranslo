@@ -23,7 +23,7 @@ class _AbouthelpScreenState extends State<AbouthelpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("About & Help")),
+      appBar: AppBar(backgroundColor: Colors.blue,title: Text("About & Help", style: TextStyle(color: Colors.white),)),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
@@ -31,10 +31,10 @@ class _AbouthelpScreenState extends State<AbouthelpScreen> {
           children: [
             Center(
               child: Text(HEADING.toUpperCase(),
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,fontStyle: FontStyle.italic)),
             ),
             SizedBox(height: 8),
-            Text("Version: $appVersion", style: TextStyle(fontSize: 16)),
+            Center(child: Text("Version: $appVersion", style: TextStyle(fontSize: 16))),
             SizedBox(height: 20),
             Text("About our Application",style:TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Text(ABOUT),

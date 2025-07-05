@@ -30,7 +30,7 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 20,),
-            Text("Speech Rate: ${translationProvider.speechRate.toStringAsFixed(1)}"),
+            Text("Speech Rate: ${translationProvider.speechRate.toStringAsFixed(1)}",style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
             Slider(
               value: translationProvider.speechRate,
               divisions: 10,
@@ -43,7 +43,7 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
               },
             ),
             SizedBox(height: 20,),
-            Text("Pitch: ${translationProvider.pitch.toStringAsFixed(1)}"),
+            Text("Pitch: ${translationProvider.pitch.toStringAsFixed(1)}",style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
             Slider(
               value: translationProvider.pitch,
               divisions: 10,
@@ -56,7 +56,7 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
               },
             ),
             SizedBox(height: 20,),
-            Text("Voice",style: TextStyle(fontWeight: FontWeight.bold),),
+            Text("Voice",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20),),
             DropdownButton<String>(
               value: translationProvider.selectedVoice,
               onChanged: (value) {
@@ -65,12 +65,12 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
               items: availableVoices.map((voice) {
                 return DropdownMenuItem<String>(
                   value: voice["value"],
-                  child: Text(voice["name"]!),
+                  child: Text(voice["name"]!,style: TextStyle(fontSize: 18),),
                 );
               }).toList(),
             ),
             SizedBox(height: 20,),
-            Text("Select Speech Language",style: TextStyle(fontWeight: FontWeight.bold),),
+            Text("Select Speech Language",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20),),
             CustomDropdown(
               value: translationProvider.selectedLanguage,
               map: talklanguageMap,
@@ -79,7 +79,7 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
                   },
             ),
             SizedBox(height: 20,),
-            Text("Select Translation Language",style: TextStyle(fontWeight: FontWeight.bold),),
+            Text("Select Translation Language",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20),),
             CustomDropdown(value: translationProvider.translationLanguage, map: languageMap, onChanged: (String? newValue) {
               setState(() {
                 translationProvider.translationLanguage = newValue!;

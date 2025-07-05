@@ -17,7 +17,7 @@ class _SettingScreenState extends State<SettingScreen> {
         children: [
           ListTile(
             leading: Icon(Icons.mic),
-            title: Text('Speech setting'),
+            title: Text('Speech setting',style: TextStyle(fontSize: 20),),
             trailing: Icon(Icons.more_vert),
             onTap: (){Navigator.push(
     context,
@@ -26,7 +26,7 @@ class _SettingScreenState extends State<SettingScreen> {
           ),
           ListTile(
             leading: Icon(Icons.question_mark),
-            title: Text('About and Help'),
+            title: Text('About and Help',style: TextStyle(fontSize: 20),),
             trailing: Icon(Icons.more_vert),
             onTap: (){Navigator.push(context, MaterialPageRoute(builder: (context) => AbouthelpScreen()));},
           ),
