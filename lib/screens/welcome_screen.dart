@@ -41,7 +41,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               SUBTITLE,
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.grey,
+                color: Colors.white70,
                 fontWeight: FontWeight.bold,
               ),
             ),
