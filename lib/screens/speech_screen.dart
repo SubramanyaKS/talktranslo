@@ -31,7 +31,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
           Spacer(),
           Text(
             translationProvider.generated,
-            style: TextStyle(fontSize: 30),
+            style: TextStyle(fontSize: 30,color: Colors.white70),
           ),
           Spacer(),
           Row(
@@ -52,7 +52,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
           Spacer(),
           Text(
             translationProvider.translated,
-            style: TextStyle(fontSize: 30),
+            style: TextStyle(fontSize: 30,color: Colors.white70),
           ),
           Spacer(),
 
