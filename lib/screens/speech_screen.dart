@@ -31,7 +31,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
           Spacer(),
           Text(
             translationProvider.generated,
-            style: TextStyle(fontSize: 30),
+            style: TextStyle(fontSize: 30,color: Colors.white70),
           ),
           Spacer(),
           Row(
@@ -52,7 +52,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
           Spacer(),
           Text(
             translationProvider.translated,
-            style: TextStyle(fontSize: 30),
+            style: TextStyle(fontSize: 30,color: Colors.white70),
           ),
           Spacer(),
 
@@ -101,19 +101,4 @@ class _SpeechScreenState extends State<SpeechScreen> {
       },
     );
   }
-
-//   Future openDialog() => showDialog(
-//       context: context,
-//       builder: (context) => AlertDialog(
-//         actions: [
-//           TextButton(onPressed: (){Navigator.of(context).pop(true);}, child: Text("OK")),
-//         ],
-//             content: CustomDropdown(
-//               value: selectedLanguage,
-//               map: talklanguageMap,
-//               onChanged: (String? newValue) {
-//                 translationProvider.selectLanguage(newValue!);
-//               },
-//             ),
-//           ));
 }
