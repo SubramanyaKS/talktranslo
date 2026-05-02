@@ -40,6 +40,7 @@ dependencies:
   flutter_tts: ^4.2.2
   avatar_glow: ^3.0.1
   provider: ^6.1.2
+  image_picker: ^1.2.1
 
 dev_dependencies:
   flutter_test:

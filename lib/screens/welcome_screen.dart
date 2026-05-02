@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:talktranslo/screens/home_screen.dart';
-
-import '../component/elevation_button.dart';
 import '../utils/constant.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -15,52 +13,135 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF1565C0), // deeper blue
+              Color(0xFF64B5F6), // lighter blue
+            ],
+          ),
+        ),
+        child: Stack(
           children: [
-            Spacer(),
-            // Chatbot Icon
-            Icon(Icons.translate, size: 100, color: Colors.white),
 
-            SizedBox(height: 20),
-            Text(
-              HEADING,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            // 🌫️ Subtle background glow (optional but premium feel)
+            Positioned(
+              top: -80,
+              left: -80,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha((0.08 * 255).round()),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
 
-            SizedBox(height: 10),
-
-            // Subtitle
-            Text(
-              SUBTITLE,
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white70,
-                fontWeight: FontWeight.bold,
+            Positioned(
+              bottom: -100,
+              right: -80,
+              child: Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha((0.06 * 255).round()),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
 
-            SizedBox(height: 100),
-            Spacer(),
-            // Start Chat Button
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevationButton(onPress:  () {
-                // Navigate to Chat Screen
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => HomeScreen(),
-                  ),
-                );
-              }, title: "Start Translation", foregroundColor: Colors.blueAccent, backgroundColor: Colors.white),
+            // Main Content
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+
+                    const Spacer(flex: 3),
+
+                    // 🌐 Icon
+                    const Icon(
+                      Icons.translate,
+                      size: 90,
+                      color: Colors.white,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // 🧠 Title
+                    Text(
+                      HEADING,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // 📝 Subtitle
+                    Text(
+                      SUBTITLE,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+
+                    const Spacer(flex: 4),
+
+                    // 🚀 CTA Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => HomeScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.blueAccent,
+                          elevation: 8,
+                          shadowColor: Colors.black26,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Start Translation",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward_ios, size: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
             ),
-            Spacer(),
           ],
         ),
       ),

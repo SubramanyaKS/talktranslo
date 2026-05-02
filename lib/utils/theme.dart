@@ -25,7 +25,7 @@ class AppTheme {
         primary: Color(0xFF192BC2),
         surface: Colors.white,
         brightness: Brightness.light),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.grey[100],
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -36,7 +36,7 @@ class AppTheme {
     primaryColor: Color(0xFF192BC2),
     scaffoldBackgroundColor: Color(0xFF121212),
     brightness: Brightness.dark,
-    cardColor: Color(0xFF192BC2),
+    cardColor: Colors.white30,
     appBarTheme: const AppBarTheme(
       elevation: 2,
       backgroundColor: Color(0xFF101B72),
@@ -56,7 +56,7 @@ class AppTheme {
         primary: Color(0xFF192BC2),
         surface: const Color(0xFF121212),
         brightness: Brightness.dark),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.grey[900],
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
