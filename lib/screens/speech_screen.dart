@@ -47,7 +47,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                       fontSize: 28,
                       color: translationProvider.generated.isEmpty
                           ? Colors.grey[600]
-                          : Colors.white70,
+                          : Colors.black,
                       fontStyle: translationProvider.generated.isEmpty
                           ? FontStyle.italic
                           : FontStyle.normal,
@@ -87,7 +87,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                       fontSize: 28,
                       color: translationProvider.translated.isEmpty
                           ? Colors.grey[600]
-                          : Colors.white70,
+                          : Colors.black,
                       fontStyle: translationProvider.translated.isEmpty
                           ? FontStyle.italic
                           : FontStyle.normal,

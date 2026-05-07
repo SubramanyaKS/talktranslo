@@ -14,19 +14,24 @@ class CustomDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButton<String>(
-      dropdownColor: Colors.grey,
-      value: value,
-      items: map.entries
-          .map((entry) => DropdownMenuItem<String>(
-                value: entry.value,
-                child: Text(
-                  entry.key,
-                  style: const TextStyle(fontSize: 18),
-                ),
-              ))
-          .toList(),
-      onChanged: onChanged,
+    return SizedBox(
+      width: double.infinity,
+      child: DropdownButton<String>(
+        isExpanded: true,
+        dropdownColor: Colors.grey,
+        value: value,
+        items: map.entries
+            .map((entry) => DropdownMenuItem<String>(
+                  value: entry.value,
+                  child: Text(
+                    entry.key,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ))
+            .toList(),
+        onChanged: onChanged,
+      ),
     );
   }
 }
+
