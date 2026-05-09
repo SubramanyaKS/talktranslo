@@ -32,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: Text(
+        title: const Text(
           'TalkTranslo',
           style: TextStyle(color: Colors.white),
         ),
@@ -60,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
         currentIndex: _selectedIndex,
-
         onTap: _onItemTapped,
       ),
     );

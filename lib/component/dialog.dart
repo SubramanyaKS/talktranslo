@@ -15,36 +15,38 @@ class _DialogBoxState extends State<DialogBox> {
   
   @override
   Widget build(BuildContext context) {
-    final translationProvider = Provider.of<TranslationProvider>(context);
-    return Padding(
-      padding: EdgeInsets.all(20.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Select an Option',
-            style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+    return Consumer<TranslationProvider>(
+      builder: (context, translationProvider, _) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Select Language',
+                style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20.0),
+              CustomDropdown(
+                value: translationProvider.selectedLanguage,
+                map: talklanguageMap,
+                onChanged: (String? newValue) {
+                  translationProvider.selectLanguage(newValue!);
+                },
+              ),
+              const SizedBox(height: 20.0),
+              ElevatedButton(
+                onPressed: () async {
+                  await translationProvider.toggleListening();
+                  if (!mounted) return;
+                  Navigator.of(this.context).pop();
+                },
+                child: const Text('Start Listening'),
+              ),
+            ],
           ),
-          SizedBox(height: 20.0),
-           CustomDropdown(
-              value: translationProvider.selectedLanguage,
-              map: talklanguageMap,
-              onChanged: (String? newValue) {
-                print(newValue!);
-                    translationProvider.selectLanguage(newValue);
-                  },
-            ),
-          SizedBox(height: 20.0),
-          ElevatedButton(
-            onPressed: () {
-
-              Navigator.of(context).pop();
-              translationProvider.toggleListening();
-            },
-            child: Text('Close'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

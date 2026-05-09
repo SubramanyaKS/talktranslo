@@ -2,6 +2,8 @@ final Map<String, String> languageMap = {
   'Arabic':'ar',
   'Assamese':'as',
   'Bengali':'bn',
+  'Chinese (Simplified)': 'zh-CN',
+  'Chinese (Traditional)': 'zh-TW',
   'English': 'en',
   'French': 'fr',
   'German': 'de',
@@ -24,6 +26,8 @@ final Map<String, String> talklanguageMap = {
   'Arabic':'ar-AE',
   'Assamese':'as-IN',
   'Bengali':'bn-IN',
+  'Chinese (Simplified)':'zh-CN',
+  'Chinese (Traditional)':'zh-TW',
   'English': 'en-US',
   'French': 'fr-FR',
   'German': 'de-DE',
@@ -55,3 +59,28 @@ final List<Map<String,String>> questionAnswer =[
   {"Q":"How to hear translated text?","A":"Click on 'Volume Icon' to hear the translated text"},
   {"Q":"Is there any way to copy translated text?","A":"Yes, there is option to copy translated text to clipboard"}
 ];
+
+// Script mapping: Language -> TextRecognitionScript
+final Map<String, String> languageToScript = {
+  'Arabic': 'latin',
+  'Assamese': 'devanagari',
+  'Bengali': 'devanagari',
+  'Chinese (Simplified)': 'chinese',
+  'Chinese (Traditional)': 'chinese',
+  'English': 'latin',
+  'French': 'latin',
+  'German': 'latin',
+  'Gujarati': 'devanagari',
+  'Hebrew': 'latin', // Note: Hebrew recognition may have limited support
+  'Hindi': 'devanagari',
+  'Japanese': 'japanese',
+  'Kannada': 'devanagari',
+  'Konkani': 'devanagari',
+  'Malayalam': 'devanagari',
+  'Russian': 'latin',
+  'Sanskrit': 'devanagari',
+  'Spanish': 'latin',
+  'Tamil': 'devanagari',
+  'Telugu': 'devanagari',
+  'Thai': 'latin', // Note: Thai recognition may have limited support
+};

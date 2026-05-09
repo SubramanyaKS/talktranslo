@@ -19,72 +19,129 @@ class _SpeechScreenState extends State<SpeechScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final translationProvider = Provider.of<TranslationProvider>(context);
-    return Scaffold(
-      body: Column(
-        children: [
-          CustomDropdown(value: translationProvider.translationLanguage, map: languageMap, onChanged: (String? newValue) {
-            setState(() {
-              translationProvider.translationLanguage = newValue!;
-            });
-          },),
-          Spacer(),
-          Text(
-            translationProvider.generated,
-            style: TextStyle(fontSize: 30,color: Colors.white70),
-          ),
-          Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              RippleIconbutton(
-                  onTap: translationProvider.speakSpeechTranslatedText,
-                  icon: Icons.volume_up_outlined,
-                  iconSize: 40),
-              SizedBox(
-                height: 20,
-                width: 20,
-              ),
-              RippleIconbutton(
-                  onTap: translationProvider.translateSpeechText, icon: Icons.translate, iconSize: 40),
-            ],
-          ),
-          Spacer(),
-          Text(
-            translationProvider.translated,
-            style: TextStyle(fontSize: 30,color: Colors.white70),
-          ),
-          Spacer(),
-
-          Center(
-            child: AvatarGlow(
-              glowColor: Colors.blue,
-              animate: translationProvider.isListening,
-              child: Material(
-                elevation: 8.0,
-                shape: const CircleBorder(),
-                child: CircleAvatar(
-                    backgroundColor: Colors.blue,
-                    radius: 40,
-                    child: IconButton(
-                        onPressed: () async {
-                          if(!translationProvider.isListening) {
-                            _showDialog(context);
-                          }
-                          else{
-                            translationProvider.toggleListening();
-                          }
-
-                        },
-                        icon: Icon(translationProvider.isListening ? Icons.mic : Icons.mic_off,color: Colors.white,
-                            size: 35))),
-              ),
+    return Consumer<TranslationProvider>(
+      builder: (context, translationProvider, _) {
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: CustomDropdown(
+                    value: translationProvider.translationLanguage,
+                    map: languageMap,
+                    onChanged: (String? newValue) {
+                      translationProvider.translateLanguage(newValue!);
+                    },
+                  ),
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    translationProvider.generated.isEmpty
+                        ? 'Tap the mic to start speaking...'
+                        : translationProvider.generated,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 28,
+                      color: translationProvider.generated.isEmpty
+                          ? Colors.grey[600]
+                          : Colors.black,
+                      fontStyle: translationProvider.generated.isEmpty
+                          ? FontStyle.italic
+                          : FontStyle.normal,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    RippleIconbutton(
+                      onTap: translationProvider.translated.isEmpty
+                          ? () {}
+                          : () => translationProvider.speakSpeechTranslatedText(),
+                      icon: Icons.volume_up_outlined,
+                      iconSize: 40,
+                    ),
+                    const SizedBox(width: 30),
+                    RippleIconbutton(
+                      onTap: translationProvider.generated.isEmpty
+                          ? () {}
+                          : () => translationProvider.translateSpeechText(),
+                      icon: Icons.translate,
+                      iconSize: 40,
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    translationProvider.translated.isEmpty
+                        ? 'Translation will appear here'
+                        : translationProvider.translated,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 28,
+                      color: translationProvider.translated.isEmpty
+                          ? Colors.grey[600]
+                          : Colors.black,
+                      fontStyle: translationProvider.translated.isEmpty
+                          ? FontStyle.italic
+                          : FontStyle.normal,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Center(
+                  child: AvatarGlow(
+                    glowColor: Colors.blue,
+                    animate: translationProvider.isListening,
+                    child: Material(
+                      elevation: 8.0,
+                      shape: const CircleBorder(),
+                      child: CircleAvatar(
+                        backgroundColor: Colors.blue,
+                        radius: 40,
+                        child: IconButton(
+                          onPressed: () async {
+                            try {
+                              if (!translationProvider.isListening) {
+                                _showDialog(context);
+                              } else {
+                                await translationProvider.toggleListening();
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: ${e.toString()}'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: Icon(
+                            translationProvider.isListening
+                                ? Icons.mic
+                                : Icons.mic_off,
+                            color: Colors.white,
+                            size: 35,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+              ],
             ),
           ),
-          // SizedBox(height: 50,)
-          Spacer(),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -96,7 +153,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
           ),
-          child: DialogBox(),
+          child: const DialogBox(),
         );
       },
     );

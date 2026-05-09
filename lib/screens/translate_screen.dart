@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';import 'package:talktranslo/component/texticon_button.dart';
+import 'package:provider/provider.dart';
 import 'package:talktranslo/utils/language.dart';
 import 'package:talktranslo/component/custom_dropdown.dart';
 import 'package:flutter/services.dart';
 
+import '../component/text_card.dart';
 import '../provider/translator_provider.dart';
 
 class TranslateScreen extends StatefulWidget {
@@ -25,124 +26,115 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final translationProvider = Provider.of<TranslationProvider>(context);
     return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                CustomDropdown(
-                  value: translationProvider.selectedLanguage,
-                  map: talklanguageMap,
-                  onChanged: (String? newValue) {
-                    translationProvider.selectLanguage(newValue!);
-                  },
-                ),
-                Icon(Icons.repeat),
-                CustomDropdown(
-                  value: translationProvider.translationLanguage,
-                  map: languageMap,
-                  onChanged: (String? newValue) {
-                    translationProvider.translateLanguage(newValue!);
-                  },
-                ),
-              ],
-            ),
-          ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
 
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Material(
-              color: Colors.white70,
-              shadowColor: Colors.grey,
-              elevation: 8,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+              // 🌍 Language Selector Row
+              Consumer<TranslationProvider>(
+                builder: (context, translationProvider, _) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 6)
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Expanded(
+                          child: CustomDropdown(
+                            value: translationProvider.selectedLanguage,
+                            map: talklanguageMap,
+                            onChanged: (val) =>
+                                translationProvider.selectLanguage(val!),
+                          ),
+                        ),
+
                         IconButton(
-                            onPressed: () {
-                              copyContent(translationProvider.inputController.text);
-                            },
-                            icon: Icon(Icons.copy),
-                            iconSize: 20),
-                        IconButton(
-                            onPressed: () {
-                              translationProvider.speakInputText();
-                            },
-                            icon: Icon(Icons.volume_up),
-                            iconSize: 20),
-                      ]),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Enter your text here',
-                      hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
+                          onPressed: (){},
+                          // onPressed: () {
+                          //   translationProvider.swapLanguages(); // optional
+                          // },
+                          icon: const Icon(Icons.swap_horiz),
+                        ),
+
+                        Expanded(
+                          child: CustomDropdown(
+                            value: translationProvider.translationLanguage,
+                            map: languageMap,
+                            onChanged: (val) =>
+                                translationProvider.translateLanguage(val!),
+                          ),
+                        ),
+                      ],
                     ),
-                    maxLines: 6,
+                  );
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // 📝 Input Card
+              Consumer<TranslationProvider>(
+                builder: (context, translationProvider, _) {
+                  return TextCard(
                     controller: translationProvider.inputController,
-                  ),
-                ],
+                    hint: "Enter text",
+                    onCopy: () => copyContent(
+                        translationProvider.inputController.text),
+                    onSpeak: translationProvider.speakInputText,
+                    editable: true,
+                  );
+                },
               ),
-            ),
-          ),
-          TextIconButton(
-              onPress: (){translationProvider.translateText();},
-              label: "Translate",
-              icon: Icons.translate),
-          // ElevatedButton(onPressed: translatedText, child: Text("Translate")),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Material(
-              color: Colors.white70,
-              shadowColor: Colors.grey,
-              elevation: 8,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      IconButton(
-                          onPressed: () {
-                            copyContent(translationProvider.translatedController.text);
-                          },
-                          icon: Icon(Icons.copy),
-                          iconSize: 20),
-                      IconButton(
-                          onPressed: () {
-                            translationProvider.speakTranslatedText();
-                          },
-                          icon: Icon(Icons.volume_up),
-                          iconSize: 20),
-                    ],
-                  ),
-                  // IconButton(onPressed:(){ speak(translatedController.text);}, icon: Icon(Icons.record_voice_over), iconSize: 20),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Translation',
-                      hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
+
+              const SizedBox(height: 20),
+
+              // 🔁 Translate Button
+              Consumer<TranslationProvider>(
+                builder: (context, translationProvider, _) {
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: translationProvider.translateText,
+                      icon: const Icon(Icons.translate),
+                      label: const Text("Translate"),
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                     ),
-                    readOnly: true,
-                    maxLines: 6,
-                    controller: translationProvider.translatedController,
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
+
+              const SizedBox(height: 20),
+
+              // 📤 Output Card
+              Consumer<TranslationProvider>(
+                builder: (context, translationProvider, _) {
+                  return TextCard(
+                    controller: translationProvider.translatedController,
+                    hint: "Translation",
+                    onCopy: () => copyContent(
+                        translationProvider.translatedController.text),
+                    onSpeak: translationProvider.speakTranslatedText,
+                    editable: false,
+                  );
+                },
+              ),
+
+            ],
           ),
-          SizedBox(
-            height: 30,
-          ),
-        ],
+        ),
       ),
     );
   }

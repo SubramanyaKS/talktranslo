@@ -3,8 +3,8 @@ import '../services/speech_service.dart';
 import '../services/translator_service.dart';
 
 class TranslationProvider with ChangeNotifier {
-  final TranslationService _translationService = TranslationService();
-  final SpeechService _speechService = SpeechService();
+  static final TranslationService _translationService = TranslationService();
+  static final SpeechService _speechService = SpeechService();
 
   TextEditingController inputController = TextEditingController();
   TextEditingController translatedController = TextEditingController();
