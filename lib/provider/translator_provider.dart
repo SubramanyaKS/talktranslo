@@ -56,7 +56,8 @@ class TranslationProvider with ChangeNotifier {
     await _speechService.speakText(translated, translationLanguage,pitch,speechRate,selectedVoice);
   }
   Future<void> speakInputText() async {
-    await _speechService.speakText(inputController.text, translationLanguage,pitch,speechRate,selectedVoice);
+    if (inputController.text.trim().isEmpty) return;
+    await _speechService.speakText(inputController.text, selectedLanguage, pitch, speechRate, selectedVoice);
   }
   Future<void> toggleListening() async {
     if (!isListening) {

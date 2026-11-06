@@ -18,11 +18,7 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
     final translationProvider = Provider.of<TranslationProvider>(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
-        title: Text(
-          'Speech Settings',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Speech Settings'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

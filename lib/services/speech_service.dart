@@ -16,9 +16,14 @@ class SpeechService {
   Future<bool> startListening(Function(String) onTextRecognized, String locale) async {
     bool available = await _speech.initialize();
     if (available) {
-      _speech.listen(onResult: (val) {
-        onTextRecognized(val.recognizedWords);
-      }, localeId: locale);
+      _speech.listen(
+        onResult: (val) {
+          onTextRecognized(val.recognizedWords);
+        },
+        listenOptions: stt.SpeechListenOptions(
+          localeId: locale,
+        ),
+      );
     }
     return available;
   }

@@ -19,6 +19,10 @@ class _SpeechScreenState extends State<SpeechScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = theme.colorScheme.onSurface;
+    final hintTextColor = theme.hintColor;
+
     return Consumer<TranslationProvider>(
       builder: (context, translationProvider, _) {
         return Scaffold(
@@ -46,8 +50,8 @@ class _SpeechScreenState extends State<SpeechScreen> {
                     style: TextStyle(
                       fontSize: 28,
                       color: translationProvider.generated.isEmpty
-                          ? Colors.grey[600]
-                          : Colors.black,
+                          ? hintTextColor
+                          : textColor,
                       fontStyle: translationProvider.generated.isEmpty
                           ? FontStyle.italic
                           : FontStyle.normal,
@@ -86,8 +90,8 @@ class _SpeechScreenState extends State<SpeechScreen> {
                     style: TextStyle(
                       fontSize: 28,
                       color: translationProvider.translated.isEmpty
-                          ? Colors.grey[600]
-                          : Colors.black,
+                          ? hintTextColor
+                          : textColor,
                       fontStyle: translationProvider.translated.isEmpty
                           ? FontStyle.italic
                           : FontStyle.normal,
@@ -114,14 +118,13 @@ class _SpeechScreenState extends State<SpeechScreen> {
                                 await translationProvider.toggleListening();
                               }
                             } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error: ${e.toString()}'),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              }
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
                             }
                           },
                           icon: Icon(

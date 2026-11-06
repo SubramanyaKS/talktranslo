@@ -62,17 +62,33 @@ class ImageTextProvider with ChangeNotifier {
 
   Future<void> pickFromCamera() async {
     try {
+      _textScanning = true;
+      notifyListeners();
+
       final image = await ImagePicker().pickImage(
         source: ImageSource.camera,
+        imageQuality: 40,
+        maxWidth: 1200,
       );
 
       if (image != null) {
         _imageFile = image;
         notifyListeners();
+        await Future.delayed(
+          const Duration(milliseconds: 100),
+        );
+        // Perform text recognition
+        await getTextRecognition(image);
+      } else {
+        // User canceled picking
+        _textScanning = false;
+        notifyListeners();
       }
     } catch (e) {
-      debugPrint('Camera permission error: $e');
+      _textScanning = false;
       _imageFile = null;
+      _scannedText = 'Error occurred while capturing';
+      debugPrint('Camera error: $e');
       notifyListeners();
     }
   }
@@ -113,6 +129,7 @@ class ImageTextProvider with ChangeNotifier {
   Future<void> getTextRecognition(XFile image) async {
     _textScanning = true;
     _scannedText = "";
+    _translatedText = "";
     notifyListeners();
 
     try {
@@ -123,12 +140,17 @@ class ImageTextProvider with ChangeNotifier {
           );
 
       _scannedText = recognizedText;
-      translateText();
-      _textScanning = false;
-      notifyListeners();
+      if (recognizedText.isNotEmpty) {
+        await translateText();
+      } else {
+        _translatedText = "";
+        _textScanning = false;
+        notifyListeners();
+      }
     } catch (e) {
       _textScanning = false;
       _scannedText = "Error occurred while scanning.";
+      _translatedText = "";
       debugPrint("Text recognition error: $e");
       notifyListeners();
     }
