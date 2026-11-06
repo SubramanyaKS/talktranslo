@@ -21,6 +21,13 @@ class _HomeScreenState extends State<HomeScreen> {
     SettingScreen(),
   ];
 
+  static const List<String> _titles = <String>[
+    'Translate',
+    'Voice Conversation',
+    'Image OCR',
+    'Settings',
+  ];
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -31,33 +38,37 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TalkTranslo'),
+        title: Text(_titles[_selectedIndex]),
       ),
-      body: Center(
-        child: _pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.translate),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onItemTapped,
+        destinations: const <NavigationDestination>[
+          NavigationDestination(
+            icon: Icon(Icons.translate_outlined),
+            selectedIcon: Icon(Icons.translate),
             label: 'Translate',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.mic),
+          NavigationDestination(
+            icon: Icon(Icons.mic_none_outlined),
+            selectedIcon: Icon(Icons.mic),
             label: 'Speak',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.image),
+          NavigationDestination(
+            icon: Icon(Icons.image_outlined),
+            selectedIcon: Icon(Icons.image),
             label: 'Image',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
       ),
     );
   }

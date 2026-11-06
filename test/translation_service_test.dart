@@ -1,0 +1,53 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:talktranslo/services/translator_service.dart';
+import 'package:talktranslo/provider/translator_provider.dart';
+
+void main() {
+  group('TranslationService Live Tests', () {
+    final service = TranslationService();
+
+    test('Translates English to Kannada', () async {
+      final result = await service.translateText('Hello, how are you?', 'kn');
+      expect(result, isNotEmpty);
+      // Print to verify actual translated string
+      // ignore: avoid_print
+      print('English -> Kannada: "Hello, how are you?" -> "$result"');
+    });
+
+    test('Translates English to Spanish', () async {
+      final result = await service.translateText('Good morning', 'es');
+      expect(result.toLowerCase(), anyOf(contains('días'), contains('día')));
+      // ignore: avoid_print
+      print('English -> Spanish: "Good morning" -> "$result"');
+    });
+
+    test('Translates English to Hindi', () async {
+      final result = await service.translateText('Thank you', 'hi');
+      expect(result, isNotEmpty);
+      // ignore: avoid_print
+      print('English -> Hindi: "Thank you" -> "$result"');
+    });
+
+    test('Empty text returns empty string', () async {
+      final result = await service.translateText('', 'kn');
+      expect(result, isEmpty);
+    });
+  });
+
+  group('TranslationProvider Swap and State Tests', () {
+    test('Swapping languages swaps codes, locales and controllers', () {
+      final provider = TranslationProvider();
+      provider.selectedLanguage = 'en-US';
+      provider.translationLanguage = 'kn';
+      provider.inputController.text = 'Hello';
+      provider.translatedController.text = 'ನಮಸ್ಕಾರ';
+
+      provider.swapLanguages();
+
+      expect(provider.selectedLanguage, equals('kn-IN'));
+      expect(provider.translationLanguage, equals('en'));
+      expect(provider.inputController.text, equals('ನಮಸ್ಕಾರ'));
+      expect(provider.translatedController.text, equals('Hello'));
+    });
+  });
+}

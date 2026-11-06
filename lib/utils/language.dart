@@ -84,3 +84,39 @@ final Map<String, String> languageToScript = {
   'Telugu': 'devanagari',
   'Thai': 'latin', // Note: Thai recognition may have limited support
 };
+
+final Map<String, String> languageFlagMap = {
+  'Arabic': '🇸🇦',
+  'Assamese': '🇮🇳',
+  'Bengali': '🇧🇩',
+  'Chinese (Simplified)': '🇨🇳',
+  'Chinese (Traditional)': '🇹🇼',
+  'English': '🇺🇸',
+  'French': '🇫🇷',
+  'German': '🇩🇪',
+  'Gujarati': '🇮🇳',
+  'Hebrew': '🇮🇱',
+  'Hindi': '🇮🇳',
+  'Japanese': '🇯🇵',
+  'Kannada': '🇮🇳',
+  'Konkani': '🇮🇳',
+  'Korean': '🇰🇷',
+  'Malayalam': '🇮🇳',
+  'Russian': '🇷🇺',
+  'Sanskrit': '🇮🇳',
+  'Spanish': '🇪🇸',
+  'Tamil': '🇮🇳',
+  'Telugu': '🇮🇳',
+  'Thai': '🇹🇭',
+};
+
+String getLanguageFlag(String languageName) {
+  return languageFlagMap[languageName] ?? '🌐';
+}
+
+String getLanguageNameFromValue(Map<String, String> map, String value) {
+  for (final entry in map.entries) {
+    if (entry.value == value) return entry.key;
+  }
+  return value;
+}

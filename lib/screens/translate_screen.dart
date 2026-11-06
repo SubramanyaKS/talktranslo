@@ -15,61 +15,130 @@ class TranslateScreen extends StatefulWidget {
 }
 
 class _TranslateScreenState extends State<TranslateScreen> {
+  double _swapTurns = 0.0;
+  bool _isTranslating = false;
 
-  void copyContent(String text) async {
+  void _copyContent(String text, {String message = 'Copied to clipboard'}) async {
+    if (text.trim().isEmpty) return;
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied to clipboard')),
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
     );
+  }
+
+  void _handleSwap(TranslationProvider provider) {
+    setState(() {
+      _swapTurns += 0.5; // Smooth 180° rotation
+    });
+    provider.swapLanguages();
+  }
+
+  Future<void> _handleTranslate(TranslationProvider provider) async {
+    final text = provider.inputController.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter some text to translate'),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    setState(() => _isTranslating = true);
+    final success = await provider.translateText();
+    if (mounted) {
+      setState(() => _isTranslating = false);
+      if (!success && provider.translationError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.translationError!),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-
-              // 🌍 Language Selector Row
+              // 🌍 Language Selector Header Bar
               Consumer<TranslationProvider>(
-                builder: (context, translationProvider, _) {
+                builder: (context, provider, _) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black12, blurRadius: 6)
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
                       ],
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        // Source Language Picker
                         Expanded(
                           child: CustomDropdown(
-                            value: translationProvider.selectedLanguage,
+                            value: provider.selectedLanguage,
                             map: talklanguageMap,
-                            onChanged: (val) =>
-                                translationProvider.selectLanguage(val!),
+                            title: 'Source Language',
+                            onChanged: (val) {
+                              if (val != null) provider.selectLanguage(val);
+                            },
                           ),
                         ),
 
-                        IconButton(
-                          onPressed: (){},
-                          // onPressed: () {
-                          //   translationProvider.swapLanguages(); // optional
-                          // },
-                          icon: const Icon(Icons.swap_horiz),
+                        // Animated Swap Button
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: AnimatedRotation(
+                            turns: _swapTurns,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOutBack,
+                            child: IconButton.filledTonal(
+                              onPressed: () => _handleSwap(provider),
+                              icon: const Icon(Icons.swap_horiz_rounded),
+                              tooltip: 'Swap languages',
+                              style: IconButton.styleFrom(
+                                shape: const CircleBorder(),
+                              ),
+                            ),
+                          ),
                         ),
 
+                        // Target Language Picker
                         Expanded(
                           child: CustomDropdown(
-                            value: translationProvider.translationLanguage,
+                            value: provider.translationLanguage,
                             map: languageMap,
-                            onChanged: (val) =>
-                                translationProvider.translateLanguage(val!),
+                            title: 'Target Language',
+                            onChanged: (val) {
+                              if (val != null) provider.translateLanguage(val);
+                            },
                           ),
                         ),
                       ],
@@ -78,37 +147,54 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 },
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               // 📝 Input Card
               Consumer<TranslationProvider>(
-                builder: (context, translationProvider, _) {
+                builder: (context, provider, _) {
                   return TextCard(
-                    controller: translationProvider.inputController,
-                    hint: "Enter text",
-                    onCopy: () => copyContent(
-                        translationProvider.inputController.text),
-                    onSpeak: translationProvider.speakInputText,
+                    controller: provider.inputController,
+                    hint: "Type text to translate...",
                     editable: true,
+                    onCopy: () => _copyContent(provider.inputController.text),
+                    onSpeak: provider.speakInputText,
+                    onClear: () {
+                      provider.translatedController.clear();
+                      setState(() {});
+                    },
                   );
                 },
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // 🔁 Translate Button
+              // 🔁 Action Translate Button
               Consumer<TranslationProvider>(
-                builder: (context, translationProvider, _) {
+                builder: (context, provider, _) {
                   return SizedBox(
-                    width: double.infinity,
-                    height: 50,
+                    height: 52,
                     child: ElevatedButton.icon(
-                      onPressed: translationProvider.translateText,
-                      icon: const Icon(Icons.translate),
-                      label: const Text("Translate"),
+                      onPressed: _isTranslating ? null : () => _handleTranslate(provider),
+                      icon: _isTranslating
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.translate_rounded),
+                      label: Text(
+                        _isTranslating ? "Translating..." : "Translate",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                     ),
@@ -116,22 +202,26 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 },
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // 📤 Output Card
+              // 📤 Output Translation Card
               Consumer<TranslationProvider>(
-                builder: (context, translationProvider, _) {
+                builder: (context, provider, _) {
                   return TextCard(
-                    controller: translationProvider.translatedController,
-                    hint: "Translation",
-                    onCopy: () => copyContent(
-                        translationProvider.translatedController.text),
-                    onSpeak: translationProvider.speakTranslatedText,
+                    controller: provider.translatedController,
+                    hint: "Translation will appear here...",
                     editable: false,
+                    onCopy: () => _copyContent(provider.translatedController.text),
+                    onSpeak: provider.speakTranslatedText,
+                    onShare: () => _copyContent(
+                      provider.translatedController.text,
+                      message: 'Translation copied ready to share!',
+                    ),
                   );
                 },
               ),
 
+              const SizedBox(height: 20),
             ],
           ),
         ),
