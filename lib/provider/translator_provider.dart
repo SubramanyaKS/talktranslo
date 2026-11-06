@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/speech_service.dart';
 import '../services/translator_service.dart';
 import '../utils/language.dart';
@@ -6,6 +7,12 @@ import '../utils/language.dart';
 class TranslationProvider with ChangeNotifier {
   static final TranslationService _translationService = TranslationService();
   static final SpeechService _speechService = SpeechService();
+
+  static const String _keySelectedLang = 'pref_selected_language';
+  static const String _keyTranslationLang = 'pref_translation_language';
+  static const String _keySpeechRate = 'pref_speech_rate';
+  static const String _keyPitch = 'pref_pitch';
+  static const String _keySelectedVoice = 'pref_selected_voice';
 
   TextEditingController inputController = TextEditingController();
   TextEditingController translatedController = TextEditingController();
@@ -21,6 +28,40 @@ class TranslationProvider with ChangeNotifier {
   String? translationError;
   String? speechError;
 
+  TranslationProvider() {
+    _loadSavedPreferences();
+  }
+
+  Future<void> _loadSavedPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSource = prefs.getString(_keySelectedLang);
+      final savedTarget = prefs.getString(_keyTranslationLang);
+      final savedRate = prefs.getDouble(_keySpeechRate);
+      final savedPitch = prefs.getDouble(_keyPitch);
+      final savedVoice = prefs.getString(_keySelectedVoice);
+
+      if (savedSource != null && talklanguageMap.containsValue(savedSource)) {
+        selectedLanguage = savedSource;
+      }
+      if (savedTarget != null && languageMap.containsValue(savedTarget)) {
+        translationLanguage = savedTarget;
+      }
+      if (savedRate != null) {
+        speechRate = savedRate;
+      }
+      if (savedPitch != null) {
+        pitch = savedPitch;
+      }
+      if (savedVoice != null && savedVoice.isNotEmpty) {
+        selectedVoice = savedVoice;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading saved preferences: $e');
+    }
+  }
+
   void clearSpeechError() {
     speechError = null;
     notifyListeners();
@@ -34,32 +75,62 @@ class TranslationProvider with ChangeNotifier {
   String speakerBTranslation = '';
   bool isTranslatingSpeech = false;
 
-  void selectLanguage(dynamic language) {
+  Future<void> selectLanguage(dynamic language) async {
     selectedLanguage = language.toString();
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedLang, selectedLanguage);
+    } catch (e) {
+      debugPrint('Error saving selected language: $e');
+    }
   }
 
-  void selectSpeedRate(double rate) {
+  Future<void> selectSpeedRate(double rate) async {
     speechRate = rate;
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_keySpeechRate, speechRate);
+    } catch (e) {
+      debugPrint('Error saving speech rate: $e');
+    }
   }
 
-  void selectVoice(dynamic voice) {
+  Future<void> selectVoice(dynamic voice) async {
     selectedVoice = voice.toString();
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedVoice, selectedVoice);
+    } catch (e) {
+      debugPrint('Error saving voice: $e');
+    }
   }
 
-  void selectPitch(double selectedPitch) {
+  Future<void> selectPitch(double selectedPitch) async {
     pitch = selectedPitch;
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_keyPitch, pitch);
+    } catch (e) {
+      debugPrint('Error saving pitch: $e');
+    }
   }
 
-  void translateLanguage(dynamic language) {
+  Future<void> translateLanguage(dynamic language) async {
     translationLanguage = language.toString();
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyTranslationLang, translationLanguage);
+    } catch (e) {
+      debugPrint('Error saving translation language: $e');
+    }
   }
 
-  void swapLanguages() {
+  Future<void> swapLanguages() async {
     final sourceName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
     final targetName = getLanguageNameFromValue(languageMap, translationLanguage);
 
@@ -78,6 +149,13 @@ class TranslationProvider with ChangeNotifier {
     }
 
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedLang, selectedLanguage);
+      await prefs.setString(_keyTranslationLang, translationLanguage);
+    } catch (e) {
+      debugPrint('Error saving swapped languages: $e');
+    }
   }
 
   Future<bool> translateText() async {

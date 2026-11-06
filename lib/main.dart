@@ -6,13 +6,16 @@ import 'package:talktranslo/screens/welcome_screen.dart';
 import 'package:talktranslo/utils/theme.dart';
 
 void main() {
-  runApp( MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (_) => TranslationProvider()),
-      ChangeNotifierProvider(create: (_) => ThemeProvider()),
-    ],
-    child: MyApp(),
-  ),);
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TranslationProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

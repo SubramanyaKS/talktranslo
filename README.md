@@ -1,321 +1,218 @@
-# 📢 TalkTranslo - Multi-Language Translator & Speech App
+# 📢 TalkTranslo - Multi-Language Translator & Voice Conversation App
 
-**TalkTranslo** is a comprehensive Flutter-based translator application that supports real-time text translation, voice translation, image text recognition and translation, and multi-language text-to-speech capabilities. Perfect for breaking language barriers with a user-friendly interface.
+**TalkTranslo** is a modern, Flutter-based translation application designed for seamless multilingual communication. It features real-time text translation with a 3-tier resilient fallback engine, two-way split-screen voice conversation mode, optical character recognition (OCR) via Google ML Kit, multilingual text-to-speech, full Material 3 dynamic theming, and persistent user preferences.
 
 <div align="center">
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.6+-blue?logo=flutter)
 ![Dart](https://img.shields.io/badge/Dart-3.6+-00B4AB?logo=dart)
-![License](https://img.shields.io/badge/License-Open%20Source-green)
+![Material 3](https://img.shields.io/badge/Material--3-Enabled-7C3AED)
+![License](https://img.shields.io/badge/License-MIT-green)
 ![Platform](https://img.shields.io/badge/Platform-Android%20|%20iOS-brightgreen)
 
 </div>
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
 
-### **📝 Text Translation**
-- Translate text between 20+ languages
-- Support for Indian languages (Kannada, Tamil, Telugu, Hindi, etc.)
-- Supports European languages (English, French, German, Spanish, Russian, etc.)
-- Real-time translation with error handling
-- Timeout protection (15-second limit)
+### **📝 Modern Text Translation**
+- **20+ Supported Languages:** Indian languages (Kannada, Hindi, Tamil, Telugu, Malayalam, Bengali, etc.) and global languages (English, Spanish, French, German, Japanese, Chinese, etc.).
+- **3-Tier Resilient Engine:** Automatic failover across primary and fallback Google translation APIs with locale normalization.
+- **Interactive Language Picker:** Search modal bottom sheet displaying national flags with instant search filtering.
+- **Animated Language Swap:** Smooth 180° rotation that swaps active source/target languages and input/output text simultaneously.
+- **Bottom Action Toolbar:** Quick buttons for **Copy**, **Clear (✕)**, **Paste from Clipboard**, **Speak (TTS)**, and **Share**.
+- **Live Character Counter:** Displays character length in real-time.
 
-### **🎤 Voice Translation**
-- Convert speech to text in multiple languages
-- Automatic translation of recognized text
-- Text-to-speech playback in target language
-- Adjustable speech rate and pitch
-- Multiple voice options (Male, Female, Robot)
+### **🎙️ Dual Split-Screen Voice Conversation Mode**
+- **Two-Way Spoken Conversation:** Dedicated top/bottom cards for Speaker 1 and Speaker 2 for natural face-to-face dialogue.
+- **Dual Microphone Action Dock:** Two thumb-friendly microphone buttons labeled with language flags.
+- **Real-Time Live Transcripts:** Transcribes speech as you talk with animated voice glows.
+- **Automatic Translation & Audio Playback:** Auto-translates upon silence detection or manual tap and speaks the translation aloud.
+- **Pronunciation Replay:** Audio volume buttons on both speaker cards to replay translations anytime.
 
-### **📸 Image Text Recognition & Translation**
-- Optical Character Recognition (OCR) using Google ML Kit
-- Support for multiple text scripts:
-  - Latin (English, French, Spanish, etc.)
-  - Devanagari (Hindi, Kannada, Tamil, Telugu, etc.)
-  - Chinese (Simplified & Traditional)
-  - Japanese
-  - Korean
-- Automatic text detection and translation
-- Image capture from camera or gallery
+### **📸 Camera & Gallery Image OCR Translation**
+- **Optical Character Recognition (OCR):** Powered by on-device Google ML Kit.
+- **Multi-Script Support:** Latin, Devanagari (Hindi, Kannada, etc.), Chinese (Simplified & Traditional), Japanese, and Korean.
+- **Instant Recognition:** Image capture via Camera or Gallery automatically triggers text detection and translation.
+- **Optimized Performance:** Pre-configured image compression (`maxWidth: 1200`, `imageQuality: 40`) for rapid OCR processing.
 
-### **⚙️ Settings & Customization**
-- Language preference selection
-- Voice and speech settings
-- Adjustable pitch and speed
-- Theme customization
+### **⚙️ Settings & Persistent Preferences**
+- **Persistent Preferences:** Automatically saves and restores last chosen language pairs, voice speed, pitch, voice style, and theme mode using `shared_preferences`.
+- **Material 3 Dynamic Theming:** Full support for Light and Dark modes with automatic contrast adjustments.
+- **Customizable Speech Engine:** Adjust speech rate (0.5x–2.0x), voice pitch, and voice models (Male, Female, Robot) with a live test preview.
+- **Overflow-Free About & FAQ:** Expandable FAQ accordion and support links.
 
 ---
 
 ## 🛠️ Tech Stack
 
 | Component | Technology |
-|-----------|-----------|
-| **Frontend** | Flutter 3.6+ |
-| **Language** | Dart |
+|---|---|
+| **Frontend Framework** | Flutter 3.6+ / Dart 3.6+ |
+| **Design System** | Material 3 (`useMaterial3: true`, dynamic seed color palettes) |
 | **State Management** | Provider 6.1.2 |
-| **Translation API** | google_mlkit_text_recognition 0.15.1 |
-| **OCR Engine** | Google ML Kit Text Recognition |
-| **Speech Recognition** | speech_to_text 7.0.0 |
-| **Text-to-Speech** | flutter_tts 4.2.2 |
-| **Image Handling** | image_picker 1.2.1 |
-| **Networking** | http 1.3.0, translator 1.0.3 |
-| **UI Components** | Material Design |
+| **Translation Engine** | 3-Tier Multi-Fallback (`translator` + Google GTX & Chrome Dict APIs) |
+| **OCR Engine** | Google ML Kit Text Recognition (`google_mlkit_text_recognition`) |
+| **Speech Recognition (STT)** | `speech_to_text` 7.0.0 (with `SpeechListenOptions`) |
+| **Text-to-Speech (TTS)** | `flutter_tts` 4.2.2 |
+| **Local Persistence** | `shared_preferences` 2.3.2 |
+| **Image Handling** | `image_picker` 1.2.1 |
+| **Networking** | `http` 1.3.0 |
 
 ---
 
-## 📱 Supported Languages
+## 📱 Supported Languages & Scripts
 
 ### Translation Languages (20+)
-Arabic, Assamese, Bengali, Chinese (Simplified & Traditional), English, French, German, Gujarati, Hebrew, Hindi, Japanese, Kannada, Konkani, Malayalam, Russian, Sanskrit, Spanish, Tamil, Telugu, Thai
+🇸🇦 Arabic (`ar`) • 🇮🇳 Assamese (`as`) • 🇧🇩 Bengali (`bn`) • 🇨🇳 Chinese Simplified (`zh-cn`) • 🇹🇼 Chinese Traditional (`zh-tw`) • 🇺🇸 English (`en`) • 🇫🇷 French (`fr`) • 🇩🇪 German (`de`) • 🇮🇳 Gujarati (`gu`) • 🇮🇱 Hebrew (`iw`) • 🇮🇳 Hindi (`hi`) • 🇯🇵 Japanese (`ja`) • 🇮🇳 Kannada (`kn`) • 🇮🇳 Konkani (`gom`) • 🇰🇷 Korean (`ko`) • 🇮🇳 Malayalam (`ml`) • 🇷🇺 Russian (`ru`) • 🇮🇳 Sanskrit (`sa`) • 🇪🇸 Spanish (`es`) • 🇮🇳 Tamil (`ta`) • 🇮🇳 Telugu (`te`) • 🇹🇭 Thai (`th`)
 
-### Text Recognition Scripts
-- **Latin** - English, French, Spanish, German, Russian, Arabic, Hebrew, Thai
-- **Devanagari** - Hindi, Kannada, Tamil, Telugu, Sanskrit, Assamese, Bengali, Gujarati, Konkani, Malayalam
-- **Chinese** - Simplified & Traditional
-- **Japanese** - Hiragana, Katakana, Kanji
-- **Korean** - Hangul
+### Text Recognition Scripts (Google ML Kit)
+- **Latin:** English, French, Spanish, German, Russian, Arabic, Hebrew, Thai
+- **Devanagari:** Hindi, Kannada, Tamil, Telugu, Sanskrit, Assamese, Bengali, Gujarati, Konkani, Malayalam
+- **Chinese:** Simplified & Traditional
+- **Japanese:** Hiragana, Katakana, Kanji
+- **Korean:** Hangul
 
 ---
 
-## 📋 Requirements
+## 📋 System Requirements & Permissions
 
 ### System Requirements
-- Flutter SDK: 3.6.0 or higher
-- Dart SDK: 3.6.0 or higher
-- Android: API level 24 or higher
-- iOS: 11.0 or higher
+- **Flutter SDK:** 3.6.0 or higher
+- **Dart SDK:** 3.6.0 or higher
+- **Android:** API level 24+ (Android 7.0 to Android 15)
+- **iOS:** iOS 12.0 or higher
 
-### Permissions Required
-#### Android
+### Permissions Configuration
+
+#### Android (`android/app/src/main/AndroidManifest.xml`)
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+<!-- Required for Android 11+ Package Visibility -->
+<queries>
+    <intent>
+        <action android:name="android.speech.RecognitionService" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.TTS_SERVICE" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.PROCESS_TEXT"/>
+        <data android:mimeType="text/plain"/>
+    </intent>
+</queries>
 ```
 
-#### iOS
+#### iOS (`ios/Runner/Info.plist`)
 ```xml
-NSCameraUsageDescription
-NSMicrophoneUsageDescription
-NSPhotoLibraryUsageDescription
-NSPhotoLibraryAddUsageDescription
+<key>NSCameraUsageDescription</key>
+<string>This app requires camera access to capture text for OCR translation.</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>This app requires microphone access to record your voice for translation.</string>
+<key>NSSpeechRecognitionUsageDescription</key>
+<string>This app requires speech recognition to transcribe your voice for translation.</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>This app requires photo library access to select images for translation.</string>
 ```
 
 ---
 
 ## 📌 Installation & Setup
 
-### **1️⃣ Prerequisites**
-Ensure you have Flutter installed. If not, download from [flutter.dev](https://flutter.dev/docs/get-started/install)
-
-### **2️⃣ Clone the Repository**
+### **1️⃣ Clone the Repository**
 ```bash
 git clone https://github.com/SubramanyaKS/talktranslo.git
 cd talktranslo
 ```
 
-### **3️⃣ Install Dependencies**
+### **2️⃣ Install Dependencies**
 ```bash
 flutter pub get
 ```
 
-### **4️⃣ Configure Permissions**
-
-#### Android (`android/app/build.gradle`)
-```gradle
-android {
-    compileSdkVersion 34
-    defaultConfig {
-        minSdkVersion 24
-        targetSdkVersion 34
-    }
-}
-```
-
-#### iOS (`ios/Podfile`)
-```ruby
-platform :ios, '11.0'
-```
-
-### **5️⃣ Run the App**
-
-**On Android:**
+### **3️⃣ Run the Test Suite**
+Verify that all unit tests and live translation integration tests pass:
 ```bash
+flutter test
+```
+
+### **4️⃣ Run the App**
+```bash
+# Run on connected device or emulator
 flutter run
-```
-
-**On iOS:**
-```bash
-flutter run
-```
-
-**With specific device:**
-```bash
-flutter run -d <device_id>
 ```
 
 ---
 
-## 📂 Project Structure
+## 📂 Project Architecture
 
 ```
 lib/
-├── main.dart                          # App entry point
-├── screens/                           # UI Screens
-│   ├── home_screen.dart              # Home/Main screen
-│   ├── translate_screen.dart         # Text translation screen
-│   ├── speech_screen.dart            # Voice translation screen
-│   ├── imagetext_screen.dart         # Image text recognition & translation
-│   ├── setting_screen.dart           # Settings screen
-│   ├── abouthelp_screen.dart         # About & Help section
-│   └── welcome_screen.dart           # Onboarding/Welcome screen
+├── main.dart                          # App entry point & multi-provider configuration
+├── screens/                           # User Interface Screens
+│   ├── home_screen.dart              # M3 NavigationBar shell with IndexedStack
+│   ├── translate_screen.dart         # Text translation with animated swap & toolbars
+│   ├── speech_screen.dart            # Split-screen dual voice conversation mode
+│   ├── imagetext_screen.dart         # ML Kit camera/gallery OCR & translation
+│   ├── setting_screen.dart           # Appearance, speech settings, and app info
+│   ├── speechsetting_screen.dart     # Pitch, rate, voice model, and language config
+│   ├── abouthelp_screen.dart         # Expandable FAQs and support
+│   └── welcome_screen.dart           # Onboarding splash screen
 ├── provider/                          # State Management
-│   ├── translator_provider.dart      # Text/Speech translation state
-│   ├── image_text_provider.dart      # Image recognition state
-│   └── theme_provider.dart           # Theme state management
-├── services/                          # Business Logic
-│   ├── translator_service.dart       # Translation API integration
-│   ├── text_recognition_service.dart # OCR/ML Kit integration
-│   └── speech_service.dart           # Speech recognition & TTS
-├── component/                         # Reusable UI Components
-│   ├── custom_dropdown.dart          # Custom dropdown widget
-│   ├── text_card.dart                # Text card component
-│   ├── ripple_iconbutton.dart        # Ripple effect button
-│   ├── elevation_button.dart         # Elevated button
-│   ├── texticon_button.dart          # Text + Icon button
-│   └── dialog.dart                   # Custom dialogs
-└── utils/                             # Utilities
-    └── language.dart                 # Language mappings & constants
+│   ├── translator_provider.dart      # Translation, speech, and preferences state
+│   ├── image_text_provider.dart      # OCR scanning and recognition pipeline
+│   └── theme_provider.dart           # Theme mode management & persistence
+├── services/                          # Core Business Logic
+│   ├── translator_service.dart       # 3-tier resilient translation engine
+│   ├── text_recognition_service.dart # ML Kit on-device text recognizer
+│   └── speech_service.dart           # Speech-to-Text & Text-to-Speech service
+├── component/                         # Reusable UI Widgets
+│   ├── custom_dropdown.dart          # Search modal bottom sheet with flags
+│   ├── text_card.dart                # M3 card with selectable text & bottom toolbar
+│   ├── ripple_iconbutton.dart        # Ripple feedback button
+│   ├── elevation_button.dart         # Custom elevated button
+│   └── dialog.dart                   # Language modal dialogs
+└── utils/                             # Utilities & Constants
+    ├── constant.dart                 # App constants & metadata
+    ├── language.dart                 # Language codes, flag emojis, and scripts
+    └── theme.dart                    # Material 3 light and dark theme data
 ```
 
 ---
 
-## 🔧 How to Use
+## 🗺️ Future Roadmap & Planned Upgrades
 
-### **Text Translation**
-1. Open the app and navigate to "Translate" tab
-2. Enter text to translate
-3. Select target language
-4. View translated result
-5. Tap volume icon to hear translation
+For the complete architectural roadmap, milestones, and upcoming feature checklist, see [FUTURE_ROADMAP.md](FUTURE_ROADMAP.md).
 
-### **Voice Translation**
-1. Go to "Speech" tab
-2. Select source and target languages
-3. Tap mic icon to start listening
-4. Speak in the selected language
-5. View and hear the translated text
-
-### **Image Text Translation**
-1. Navigate to "Image Text" tab
-2. Select source language (text in image) and target language
-3. Tap camera icon to capture or photo icon to select from gallery
-4. App automatically recognizes and translates text
-5. View recognized and translated text
-
----
-
-## ⚠️ Recent Bug Fixes (v1.0)
-
-- ✅ Fixed translation crash on network timeout
-- ✅ Added 15-second timeout for translation requests
-- ✅ Improved error handling in text recognition
-- ✅ Added permission error handling for camera access
-- ✅ Disabled translate button when no text is recognized
-- ✅ Enhanced debugging with detailed error messages
-
----
-
-## 🚀 Future Enhancements
-
-- 🎨 Dark Mode Support
-- 💾 Offline Translation Cache
-- 🔤 Support for more languages and scripts
-- 🎯 Improved OCR accuracy
-- 🌙 Night Mode Theme
-- 📊 Translation History
-- 🔤 Advanced Text Formatting
-- 📤 Share & Export Features
-
----
-
-## 🐛 Known Issues & Limitations
-
-- Hebrew and Thai text recognition may have limited accuracy
-- Translation requires active internet connection
-- OCR accuracy depends on image quality and lighting
-- Large image processing may take longer
+- [x] **Phase 1:** Immediate Stabilization & Bug Squashing (Fixed camera OCR trigger, TTS language mismatch, dark theme text contrast, deprecated APIs).
+- [x] **Phase 2:** Material 3 UI/UX Transformation (M3 NavigationBar, flag search modal sheets, animated language swap, bottom toolbars, split-screen conversation mode).
+- [x] **Phase 3 (In Progress):** Preferences Persistence via `shared_preferences` (Theme, last language pairs, voice settings).
+- [ ] **Phase 3 (Next):** Local SQLite / Hive database for **Translation History** and **Starred Phrasebook**.
+- [ ] **Phase 4:** On-device offline translation via `google_mlkit_translation`, image cropping tool (`image_cropper`), and Gemini AI contextual translation.
 
 ---
 
 ## 📝 License
 
-This project is **open-source** and free to use under the MIT License. Feel free to contribute!
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Follow these steps:
-
-1. **Fork the repository**
-   ```bash
-   git clone https://github.com/SubramanyaKS/talktranslo.git
-   cd talktranslo
-   ```
-
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-
-3. **Make your changes and commit**
-   ```bash
-   git commit -m "Add amazing feature"
-   ```
-
-4. **Push to the branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-
-5. **Open a Pull Request** with detailed description
-
----
-
-## 🐞 Bug Reports & Feature Requests
-
-Found a bug or have a feature request? Open an [issue](https://github.com/SubramanyaKS/talktranslo/issues) with:
-- Description of the issue
-- Steps to reproduce
-- Expected vs actual behavior
-- Device/OS information
+This project is open-source under the [MIT License](LICENSE).
 
 ---
 
 ## 📧 Contact & Support
 
-- **Email:** connectwithsubbu@gmail.com
-- **Twitter:** [@developersubbu](https://x.com/)
+- **Author:** [Subramanya KS](https://github.com/SubramanyaKS)
 - **Issues:** [GitHub Issues](https://github.com/SubramanyaKS/talktranslo/issues)
-
----
-
-## 🙏 Acknowledgments
-
-- **Google ML Kit** - For powerful OCR capabilities
-- **Flutter Team** - For the amazing framework
-- **Open Source Community** - For all the wonderful packages
-
----
 
 <div align="center">
 
-**Made with ❤️ by [Subramanya KS](https://github.com/SubramanyaKS)**
+**Made with ❤️ using Flutter**
 
-⭐ Star this repo if you found it helpful!
+⭐ Star this repository if you found it helpful!
 
 </div>

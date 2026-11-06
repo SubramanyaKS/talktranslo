@@ -1,15 +1,21 @@
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talktranslo/services/translator_service.dart';
 import 'package:talktranslo/provider/translator_provider.dart';
 
+class _RealHttpOverrides extends HttpOverrides {}
+
 void main() {
+  HttpOverrides.global = _RealHttpOverrides();
+  SharedPreferences.setMockInitialValues({});
+
   group('TranslationService Live Tests', () {
     final service = TranslationService();
 
     test('Translates English to Kannada', () async {
       final result = await service.translateText('Hello, how are you?', 'kn');
       expect(result, isNotEmpty);
-      // Print to verify actual translated string
       // ignore: avoid_print
       print('English -> Kannada: "Hello, how are you?" -> "$result"');
     });

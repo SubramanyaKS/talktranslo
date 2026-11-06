@@ -1,10 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talktranslo/main.dart';
 import 'package:talktranslo/provider/theme_provider.dart';
 import 'package:talktranslo/provider/translator_provider.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('TalkTranslo smoke test - verifies welcome screen renders', (WidgetTester tester) async {
     await tester.pumpWidget(
       MultiProvider(
