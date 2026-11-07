@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/text_recognition_service.dart';
 import '../services/translator_service.dart';
@@ -62,17 +63,33 @@ class ImageTextProvider with ChangeNotifier {
 
   Future<void> pickFromCamera() async {
     try {
+      _textScanning = true;
+      notifyListeners();
+
       final image = await ImagePicker().pickImage(
         source: ImageSource.camera,
+        imageQuality: 40,
+        maxWidth: 1200,
       );
 
       if (image != null) {
         _imageFile = image;
         notifyListeners();
+        await Future.delayed(
+          const Duration(milliseconds: 100),
+        );
+        // Perform text recognition
+        await getTextRecognition(image);
+      } else {
+        // User canceled picking
+        _textScanning = false;
+        notifyListeners();
       }
     } catch (e) {
-      debugPrint('Camera permission error: $e');
+      _textScanning = false;
       _imageFile = null;
+      _scannedText = 'Error occurred while capturing';
+      debugPrint('Camera error: $e');
       notifyListeners();
     }
   }
@@ -113,6 +130,7 @@ class ImageTextProvider with ChangeNotifier {
   Future<void> getTextRecognition(XFile image) async {
     _textScanning = true;
     _scannedText = "";
+    _translatedText = "";
     notifyListeners();
 
     try {
@@ -123,14 +141,64 @@ class ImageTextProvider with ChangeNotifier {
           );
 
       _scannedText = recognizedText;
-      translateText();
-      _textScanning = false;
-      notifyListeners();
+      if (recognizedText.isNotEmpty) {
+        await translateText();
+      } else {
+        _translatedText = "";
+        _textScanning = false;
+        notifyListeners();
+      }
     } catch (e) {
       _textScanning = false;
       _scannedText = "Error occurred while scanning.";
+      _translatedText = "";
       debugPrint("Text recognition error: $e");
       notifyListeners();
+    }
+  }
+
+  /// Opens the native image cropper to allow focusing and rotating on specific text.
+  Future<bool> cropCurrentImage() async {
+    if (_imageFile == null) return false;
+    try {
+      final cropped = await ImageCropper().cropImage(
+        sourcePath: _imageFile!.path,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop & Focus Text',
+            toolbarColor: const Color(0xFF2563EB),
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9,
+            ],
+          ),
+          IOSUiSettings(
+            title: 'Crop & Focus Text',
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9,
+            ],
+          ),
+        ],
+      );
+
+      if (cropped != null) {
+        _imageFile = XFile(cropped.path);
+        notifyListeners();
+        await getTextRecognition(_imageFile!);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Crop image error: $e');
+      return false;
     }
   }
 

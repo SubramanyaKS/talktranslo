@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:talktranslo/provider/history_provider.dart';
+import 'package:talktranslo/provider/image_text_provider.dart';
 import 'package:talktranslo/provider/theme_provider.dart';
 import 'package:talktranslo/provider/translator_provider.dart';
 import 'package:talktranslo/screens/welcome_screen.dart';
 import 'package:talktranslo/utils/theme.dart';
 
 void main() {
-  runApp( MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (_) => TranslationProvider()),
-      ChangeNotifierProvider(create: (_) => ThemeProvider()),
-    ],
-    child: MyApp(),
-  ),);
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TranslationProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => ImageTextProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -25,7 +32,7 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, _) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Flutter Demo',
+          title: 'TalkTranslo',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,

@@ -74,7 +74,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                     // 🧠 Title
                     Text(
-                      HEADING,
+                      heading,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 38,
@@ -88,7 +88,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                     // 📝 Subtitle
                     Text(
-                      SUBTITLE,
+                      subtitle,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 15,

@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/history_item.dart';
+import '../services/database_service.dart';
 import '../services/speech_service.dart';
 import '../services/translator_service.dart';
+import '../utils/language.dart';
 
 class TranslationProvider with ChangeNotifier {
   static final TranslationService _translationService = TranslationService();
   static final SpeechService _speechService = SpeechService();
+
+  static const String _keySelectedLang = 'pref_selected_language';
+  static const String _keyTranslationLang = 'pref_translation_language';
+  static const String _keySpeechRate = 'pref_speech_rate';
+  static const String _keyPitch = 'pref_pitch';
+  static const String _keySelectedVoice = 'pref_selected_voice';
 
   TextEditingController inputController = TextEditingController();
   TextEditingController translatedController = TextEditingController();
@@ -15,60 +25,535 @@ class TranslationProvider with ChangeNotifier {
   String translated = '';
   double speechRate = 1.0;
   double pitch = 1.0;
-  String selectedVoice = "en-us-x-sfg#male_1-local";
+  String selectedVoice = "natural";
 
-  void selectLanguage(language){
-    selectedLanguage=language;
-    notifyListeners();
-  }
-  void selectSpeedRate(rate){
-    speechRate=rate;
-    notifyListeners();
-  }
-  void selectVoice(voice){
-    selectedVoice=voice;
-    notifyListeners();
-  }
-  void selectPitch(selectedPitch){
-    pitch=selectedPitch;
-    notifyListeners();
-  }
-  void translateLanguage(language){
-    translationLanguage=language;
-    notifyListeners();
+  String? translationError;
+  String? speechError;
+
+  TranslationProvider() {
+    _loadSavedPreferences();
   }
 
-  Future<void> translateText() async {
-    String translatedText = await _translationService.translateText(inputController.text, translationLanguage);
-    translatedController.text = translatedText;
+  Future<void> _loadSavedPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSource = prefs.getString(_keySelectedLang);
+      final savedTarget = prefs.getString(_keyTranslationLang);
+      final savedRate = prefs.getDouble(_keySpeechRate);
+      final savedPitch = prefs.getDouble(_keyPitch);
+      final savedVoice = prefs.getString(_keySelectedVoice);
+
+      if (savedSource != null && talklanguageMap.containsValue(savedSource)) {
+        selectedLanguage = savedSource;
+      }
+      if (savedTarget != null && languageMap.containsValue(savedTarget)) {
+        translationLanguage = savedTarget;
+      }
+      if (savedRate != null) {
+        speechRate = savedRate;
+      }
+      if (savedPitch != null) {
+        pitch = savedPitch;
+      }
+      if (savedVoice != null && savedVoice.isNotEmpty) {
+        selectedVoice = normalizeVoiceChoice(savedVoice);
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading saved preferences: $e');
+    }
+  }
+
+  void clearSpeechError() {
+    speechError = null;
     notifyListeners();
   }
+
+  // Conversational Voice Mode State
+  int activeSpeaker = 0; // 0: None, 1: Speaker A, 2: Speaker B
+  String speakerASpeech = '';
+  String speakerATranslation = '';
+  String speakerBSpeech = '';
+  String speakerBTranslation = '';
+  bool isTranslatingSpeech = false;
+  final ValueNotifier<double> soundLevelNotifier = ValueNotifier<double>(0.0);
+
+  void _handleSoundLevelChange(double level) {
+    double normalized = 0.0;
+    if (level > 0) {
+      normalized = (level / 8.0).clamp(0.0, 1.0);
+    } else if (level > -35) {
+      normalized = ((level + 35) / 35.0).clamp(0.0, 1.0);
+    }
+    soundLevelNotifier.value = normalized;
+  }
+
+  Future<void> selectLanguage(dynamic language) async {
+    selectedLanguage = language.toString();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedLang, selectedLanguage);
+    } catch (e) {
+      debugPrint('Error saving selected language: $e');
+    }
+  }
+
+  Future<void> selectSpeedRate(double rate) async {
+    speechRate = rate;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_keySpeechRate, speechRate);
+    } catch (e) {
+      debugPrint('Error saving speech rate: $e');
+    }
+  }
+
+  Future<void> selectVoice(dynamic voice) async {
+    selectedVoice = normalizeVoiceChoice(voice?.toString());
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedVoice, selectedVoice);
+    } catch (e) {
+      debugPrint('Error saving voice: $e');
+    }
+  }
+
+  Future<void> selectPitch(double selectedPitch) async {
+    pitch = selectedPitch;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_keyPitch, pitch);
+    } catch (e) {
+      debugPrint('Error saving pitch: $e');
+    }
+  }
+
+  Future<void> translateLanguage(dynamic language) async {
+    translationLanguage = language.toString();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyTranslationLang, translationLanguage);
+    } catch (e) {
+      debugPrint('Error saving translation language: $e');
+    }
+  }
+
+  Future<void> swapLanguages() async {
+    final sourceName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
+    final targetName = getLanguageNameFromValue(languageMap, translationLanguage);
+
+    if (talklanguageMap.containsKey(targetName)) {
+      selectedLanguage = talklanguageMap[targetName]!;
+    }
+    if (languageMap.containsKey(sourceName)) {
+      translationLanguage = languageMap[sourceName]!;
+    }
+
+    final prevInput = inputController.text;
+    final prevTranslated = translatedController.text;
+    if (prevTranslated.isNotEmpty) {
+      inputController.text = prevTranslated;
+      translatedController.text = prevInput;
+    }
+
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedLang, selectedLanguage);
+      await prefs.setString(_keyTranslationLang, translationLanguage);
+    } catch (e) {
+      debugPrint('Error saving swapped languages: $e');
+    }
+  }
+
+  Future<bool> translateText() async {
+    final text = inputController.text.trim();
+    if (text.isEmpty) return false;
+    try {
+      translationError = null;
+      notifyListeners();
+      final translatedText = await _translationService.translateText(
+        text,
+        translationLanguage,
+      );
+      translatedController.text = translatedText;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      translationError = e.toString().replaceFirst('Exception: ', '');
+      debugPrint('Translation error: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> translateSpeechText() async {
-    String translatedText = await _translationService.translateText(generated, translationLanguage);
-    translated = translatedText;
-    notifyListeners();
+    final text = generated.trim();
+    if (text.isEmpty) return;
+    try {
+      final translatedText = await _translationService.translateText(
+        text,
+        translationLanguage,
+      );
+      translated = translatedText;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Speech translation error: $e');
+    }
   }
 
   Future<void> speakTranslatedText() async {
-    await _speechService.speakText(translatedController.text, translationLanguage,pitch,speechRate,selectedVoice);
+    if (translatedController.text.trim().isEmpty) return;
+    await _speechService.speakText(
+      translatedController.text,
+      translationLanguage,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
   }
+
   Future<void> speakSpeechTranslatedText() async {
-    await _speechService.speakText(translated, translationLanguage,pitch,speechRate,selectedVoice);
+    if (translated.trim().isEmpty) return;
+    await _speechService.speakText(
+      translated,
+      translationLanguage,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
   }
+
   Future<void> speakInputText() async {
-    await _speechService.speakText(inputController.text, translationLanguage,pitch,speechRate,selectedVoice);
+    if (inputController.text.trim().isEmpty) return;
+    await _speechService.speakText(
+      inputController.text,
+      selectedLanguage,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
   }
+
   Future<void> toggleListening() async {
     if (!isListening) {
-      bool available = await _speechService.startListening((text) {
-        generated = text;
-        notifyListeners();
-      }, selectedLanguage);
+      final available = await _speechService.startListening(
+        onResult: (text, _) {
+          generated = text;
+          notifyListeners();
+        },
+        locale: selectedLanguage,
+        onDone: () {
+          isListening = false;
+          notifyListeners();
+        },
+      );
       isListening = available;
     } else {
       _speechService.stopListening();
       isListening = false;
     }
     notifyListeners();
+  }
+
+  // Dual Conversational Mode Handlers
+  Future<void> toggleSpeakerAListening() async {
+    speechError = null;
+
+    if (activeSpeaker == 1) {
+      _speechService.stopListening();
+      activeSpeaker = 0;
+      soundLevelNotifier.value = 0.0;
+      notifyListeners();
+      if (speakerASpeech.trim().isNotEmpty) {
+        await translateSpeakerASpeech();
+      }
+      return;
+    }
+
+    _speechService.stopListening();
+    activeSpeaker = 1;
+    speakerASpeech = '';
+    speakerATranslation = '';
+    soundLevelNotifier.value = 0.0;
+    notifyListeners();
+
+    final available = await _speechService.startListening(
+      onResult: (text, isFinal) {
+        speakerASpeech = text;
+        generated = text;
+        notifyListeners();
+        if (isFinal && text.trim().isNotEmpty && !isTranslatingSpeech) {
+          activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
+          translateSpeakerASpeech();
+        }
+      },
+      locale: selectedLanguage,
+      onSoundLevelChange: _handleSoundLevelChange,
+      onDone: () {
+        if (activeSpeaker == 1) {
+          activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
+          notifyListeners();
+          if (speakerASpeech.trim().isNotEmpty &&
+              speakerATranslation.isEmpty &&
+              !isTranslatingSpeech) {
+            translateSpeakerASpeech();
+          }
+        }
+      },
+      onError: (err) {
+        if (activeSpeaker == 1) {
+          speechError = "Speech recognition error: $err";
+          activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
+          notifyListeners();
+        }
+      },
+    );
+
+    if (!available) {
+      activeSpeaker = 0;
+      soundLevelNotifier.value = 0.0;
+      speechError = "Microphone is unavailable. Please check microphone permissions in Settings.";
+      notifyListeners();
+    }
+  }
+
+  Future<void> translateSpeakerASpeech() async {
+    if (speakerASpeech.trim().isEmpty || isTranslatingSpeech) return;
+    try {
+      isTranslatingSpeech = true;
+      notifyListeners();
+      final res = await _translationService.translateText(
+        speakerASpeech,
+        translationLanguage,
+      );
+      speakerATranslation = res;
+      translated = res;
+      isTranslatingSpeech = false;
+      notifyListeners();
+      await speakSpeakerATranslation();
+
+      try {
+        await DatabaseService.instance.insertTranslation(
+          TranslationHistoryItem(
+            sourceText: speakerASpeech,
+            translatedText: res,
+            sourceLang: selectedLanguage,
+            targetLang: translationLanguage,
+            timestamp: DateTime.now(),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error auto-saving speech translation: $e');
+      }
+    } catch (e) {
+      isTranslatingSpeech = false;
+      speakerATranslation = "Translation failed: $e";
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleSpeakerBListening() async {
+    speechError = null;
+
+    if (activeSpeaker == 2) {
+      _speechService.stopListening();
+      activeSpeaker = 0;
+      soundLevelNotifier.value = 0.0;
+      notifyListeners();
+      if (speakerBSpeech.trim().isNotEmpty && !isTranslatingSpeech) {
+        await translateSpeakerBSpeech();
+      }
+      return;
+    }
+
+    _speechService.stopListening();
+    activeSpeaker = 2;
+    speakerBSpeech = '';
+    speakerBTranslation = '';
+    soundLevelNotifier.value = 0.0;
+    notifyListeners();
+
+    final targetLangName = getLanguageNameFromValue(languageMap, translationLanguage);
+    final speakerBLocale = talklanguageMap[targetLangName] ?? 'kn-IN';
+
+    final available = await _speechService.startListening(
+      onResult: (text, isFinal) {
+        speakerBSpeech = text;
+        notifyListeners();
+        if (isFinal && text.trim().isNotEmpty && !isTranslatingSpeech) {
+          activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
+          translateSpeakerBSpeech();
+        }
+      },
+      locale: speakerBLocale,
+      onSoundLevelChange: _handleSoundLevelChange,
+      onDone: () {
+        if (activeSpeaker == 2) {
+          activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
+          notifyListeners();
+          if (speakerBSpeech.trim().isNotEmpty &&
+              speakerBTranslation.isEmpty &&
+              !isTranslatingSpeech) {
+            translateSpeakerBSpeech();
+          }
+        }
+      },
+      onError: (err) {
+        if (activeSpeaker == 2) {
+          speechError = "Speech recognition error: $err";
+          activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
+          notifyListeners();
+        }
+      },
+    );
+
+    if (!available) {
+      activeSpeaker = 0;
+      soundLevelNotifier.value = 0.0;
+      speechError = "Microphone is unavailable. Please check microphone permissions in Settings.";
+      notifyListeners();
+    }
+  }
+
+  Future<void> translateSpeakerBSpeech() async {
+    if (speakerBSpeech.trim().isEmpty || isTranslatingSpeech) return;
+    try {
+      isTranslatingSpeech = true;
+      notifyListeners();
+      final sourceLangName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
+      final targetCode = languageMap[sourceLangName] ?? 'en';
+      final res = await _translationService.translateText(
+        speakerBSpeech,
+        targetCode,
+      );
+      speakerBTranslation = res;
+      isTranslatingSpeech = false;
+      notifyListeners();
+      await speakSpeakerBTranslation();
+
+      try {
+        await DatabaseService.instance.insertTranslation(
+          TranslationHistoryItem(
+            sourceText: speakerBSpeech,
+            translatedText: res,
+            sourceLang: translationLanguage,
+            targetLang: targetCode,
+            timestamp: DateTime.now(),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error auto-saving speech translation: $e');
+      }
+    } catch (e) {
+      isTranslatingSpeech = false;
+      speakerBTranslation = "Translation failed: $e";
+      notifyListeners();
+    }
+  }
+
+  Future<void> speakSpeakerATranslation() async {
+    if (speakerATranslation.trim().isEmpty) return;
+    await _speechService.speakText(
+      speakerATranslation,
+      translationLanguage,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
+  }
+
+  Future<void> speakSpeakerBTranslation() async {
+    if (speakerBTranslation.trim().isEmpty) return;
+    final sourceLangName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
+    final targetCode = languageMap[sourceLangName] ?? 'en';
+    await _speechService.speakText(
+      speakerBTranslation,
+      targetCode,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
+  }
+
+  /// Speaks any custom text in a specific language using the active pitch, rate, and voice settings.
+  Future<void> speakCustomText(String text, String language) async {
+    if (text.trim().isEmpty) return;
+    await _speechService.speakText(
+      text,
+      language,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
+  }
+
+  /// Cancels any active speech recognition session and stops TTS playback (e.g. when switching tabs).
+  void stopAllSpeechAndListening() {
+    _speechService.stopListening();
+    _speechService.stopSpeaking();
+    soundLevelNotifier.value = 0.0;
+    if (activeSpeaker != 0) {
+      activeSpeaker = 0;
+      notifyListeners();
+    }
+    if (isListening) {
+      isListening = false;
+      notifyListeners();
+    }
+  }
+
+  /// Speaks a test preview in the selected speech language with the active voice and pitch settings.
+  Future<void> testVoiceSettings() async {
+    String testText = inputController.text.trim();
+    if (testText.isEmpty) {
+      testText = _getSamplePhraseForLocale(selectedLanguage);
+    }
+    await _speechService.speakText(
+      testText,
+      selectedLanguage,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
+  }
+
+  String _getSamplePhraseForLocale(String localeOrCode) {
+    final clean = TranslationService.normalizeLanguageCode(localeOrCode);
+    switch (clean) {
+      case 'kn':
+        return "ನಮಸ್ಕಾರ, ಇದು ಟಾಕ್‌ಟ್ರಾನ್ಸ್‌ಲೋ ಧ್ವನಿ ಪರೀಕ್ಷೆ.";
+      case 'hi':
+        return "नमस्ते, यह टॉकट्रांसलो की आवाज़ का परीक्षण है।";
+      case 'es':
+        return "Hola, esta es una prueba de voz para TalkTranslo.";
+      case 'fr':
+        return "Bonjour, ceci est un test vocal pour TalkTranslo.";
+      case 'de':
+        return "Hallo, dies ist ein Sprachtest für TalkTranslo.";
+      case 'ja':
+        return "こんにちは、これはTalkTransloの音声テストです。";
+      case 'zh-cn':
+        return "您好，这是TalkTranslo的语音测试。";
+      case 'ta':
+        return "வணக்கம், இது டாக்ட்ரான்ஸ்லோவின் குரல் சோதனை.";
+      case 'te':
+        return "నమస్కారం, ఇది టాక్ ట్రాన్స్ లో వాయిస్ టెస్ట్.";
+      case 'ar':
+        return "مرحباً، هذا اختبار صوتي لتطبيق TalkTranslo.";
+      default:
+        return "Hello! This is how your selected voice sounds in TalkTranslo.";
+    }
   }
 }
