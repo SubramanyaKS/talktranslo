@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/text_recognition_service.dart';
 import '../services/translator_service.dart';
@@ -153,6 +154,51 @@ class ImageTextProvider with ChangeNotifier {
       _translatedText = "";
       debugPrint("Text recognition error: $e");
       notifyListeners();
+    }
+  }
+
+  /// Opens the native image cropper to allow focusing and rotating on specific text.
+  Future<bool> cropCurrentImage() async {
+    if (_imageFile == null) return false;
+    try {
+      final cropped = await ImageCropper().cropImage(
+        sourcePath: _imageFile!.path,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop & Focus Text',
+            toolbarColor: const Color(0xFF2563EB),
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9,
+            ],
+          ),
+          IOSUiSettings(
+            title: 'Crop & Focus Text',
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9,
+            ],
+          ),
+        ],
+      );
+
+      if (cropped != null) {
+        _imageFile = XFile(cropped.path);
+        notifyListeners();
+        await getTextRecognition(_imageFile!);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Crop image error: $e');
+      return false;
     }
   }
 

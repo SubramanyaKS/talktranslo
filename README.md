@@ -27,15 +27,18 @@
 ### **🎙️ Dual Split-Screen Voice Conversation Mode**
 - **Two-Way Spoken Conversation:** Dedicated top/bottom cards for Speaker 1 and Speaker 2 for natural face-to-face dialogue.
 - **Dual Microphone Action Dock:** Two thumb-friendly microphone buttons labeled with language flags.
+- **Live Animated Audio Waveform:** Real-time dancing soundwave visualizer responding to mic amplitude and speech cadence in the dock and active speaker card.
 - **Real-Time Live Transcripts:** Transcribes speech as you talk with animated voice glows.
 - **Automatic Translation & Audio Playback:** Auto-translates upon silence detection or manual tap and speaks the translation aloud.
 - **Pronunciation Replay:** Audio volume buttons on both speaker cards to replay translations anytime.
 
 ### **📸 Camera & Gallery Image OCR Translation**
 - **Optical Character Recognition (OCR):** Powered by on-device Google ML Kit.
+- **Integrated Image Cropper:** Built-in cropping, rotating, and aspect ratio tool (`image_cropper`) allowing users to isolate specific text areas, signs, or document sections before recognition.
 - **Multi-Script Support:** Latin, Devanagari (Hindi, Kannada, etc.), Chinese (Simplified & Traditional), Japanese, and Korean.
 - **Instant Recognition:** Image capture via Camera or Gallery automatically triggers text detection and translation.
 - **Optimized Performance:** Pre-configured image compression (`maxWidth: 1200`, `imageQuality: 40`) for rapid OCR processing.
+- **Persistent State:** Scanned images and extracted text persist across tab switches without resetting.
 
 ### **⭐ Translation History & Starred Phrasebook**
 - **Automatic SQLite Persistence:** Translations from text and voice conversation modes automatically save to local database storage (`sqflite`).
@@ -65,7 +68,7 @@
 | **Text-to-Speech (TTS)** | `flutter_tts` 4.2.2 |
 | **Local Persistence** | `shared_preferences` 2.3.2 & `sqflite` 2.4.1 |
 | **Native Sharing** | `share_plus` 10.1.2 |
-| **Image Handling** | `image_picker` 1.2.1 |
+| **Image Handling & Cropping** | `image_picker` 1.2.1 & `image_cropper` 13.0.0 |
 | **Networking** | `http` 1.3.0 |
 
 ---
@@ -206,7 +209,8 @@ For the complete architectural roadmap, milestones, and upcoming feature checkli
 - [x] **Phase 1:** Immediate Stabilization & Bug Squashing (Fixed camera OCR trigger, TTS language mismatch, dark theme text contrast, deprecated APIs).
 - [x] **Phase 2:** Material 3 UI/UX Transformation (M3 NavigationBar, flag search modal sheets, animated language swap, bottom toolbars, split-screen conversation mode).
 - [x] **Phase 3:** Persistence, History & Phrasebook (`shared_preferences` settings persistence, SQLite history database, Starred Phrasebook, `share_plus` native export).
-- [ ] **Phase 4:** On-device offline translation via `google_mlkit_translation`, image cropping tool (`image_cropper`), and Gemini AI contextual translation.
+- [x] **Phase 4 (In Progress):** Image Cropper & Isolation Tool (`image_cropper`) & Real-Time Audio Waveform Visualizer.
+- [ ] **Phase 4 (Next):** On-device offline translation via `google_mlkit_translation` and Gemini AI contextual translation.
 
 ---
 

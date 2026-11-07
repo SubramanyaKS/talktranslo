@@ -129,51 +129,73 @@ class ImageTextScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Image Preview Container
-                  Container(
-                    height: 260,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  Stack(
+                    children: [
+                      Container(
+                        height: 260,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: provider.imageFile != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(18),
+                                child: Image.file(
+                                  File(provider.imageFile!.path),
+                                  fit: BoxFit.contain,
+                                  cacheWidth: 800,
+                                  filterQuality: FilterQuality.low,
+                                ),
+                              )
+                            : Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.add_photo_alternate_outlined,
+                                        size: 48,
+                                        color: colorScheme.primary.withValues(alpha: 0.6),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        "Capture or select an image to extract text",
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                       ),
-                    ),
-                    child: provider.imageFile != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(18),
-                            child: Image.file(
-                              File(provider.imageFile!.path),
-                              fit: BoxFit.contain,
-                              cacheWidth: 800,
-                              filterQuality: FilterQuality.low,
-                            ),
-                          )
-                        : Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.add_photo_alternate_outlined,
-                                    size: 48,
-                                    color: colorScheme.primary.withValues(alpha: 0.6),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    "Capture or select an image to extract text",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
+                      if (provider.imageFile != null)
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => provider.cropCurrentImage(),
+                            icon: const Icon(Icons.crop_rotate_rounded, size: 18),
+                            label: const Text('Crop / Rotate'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colorScheme.surface.withValues(alpha: 0.88),
+                              elevation: 2,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                           ),
+                        ),
+                    ],
                   ),
 
                   const SizedBox(height: 16),
@@ -190,14 +212,14 @@ class ImageTextScreen extends StatelessWidget {
                         icon: const Icon(Icons.photo_library_outlined),
                         label: const Text('Gallery'),
                         style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                       ),
 
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 10),
 
                       // Camera Button
                       FilledButton.icon(
@@ -207,12 +229,30 @@ class ImageTextScreen extends StatelessWidget {
                         icon: const Icon(Icons.camera_alt_rounded),
                         label: const Text('Camera'),
                         style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                       ),
+
+                      if (provider.imageFile != null) ...[
+                        const SizedBox(width: 10),
+                        // Crop & Focus Button
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            await provider.cropCurrentImage();
+                          },
+                          icon: const Icon(Icons.crop_rounded),
+                          label: const Text('Crop'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
 

@@ -1,6 +1,7 @@
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:talktranslo/component/audio_waveform.dart';
 import 'package:talktranslo/component/custom_dropdown.dart';
 import 'package:talktranslo/utils/language.dart';
 
@@ -109,6 +110,17 @@ class _SpeechScreenState extends State<SpeechScreen> {
                                 ),
                               ),
                             ),
+                            if (isListeningA) ...[
+                              const SizedBox(width: 8),
+                              AudioWaveform(
+                                soundLevel: provider.soundLevelNotifier,
+                                isListening: true,
+                                activeColor: colorScheme.primary,
+                                barCount: 5,
+                                height: 16.0,
+                                width: 36.0,
+                              ),
+                            ],
                             const Spacer(),
                             SizedBox(
                               width: 170,
@@ -255,6 +267,17 @@ class _SpeechScreenState extends State<SpeechScreen> {
                                 ),
                               ),
                             ),
+                            if (isListeningB) ...[
+                              const SizedBox(width: 8),
+                              AudioWaveform(
+                                soundLevel: provider.soundLevelNotifier,
+                                isListening: true,
+                                activeColor: colorScheme.secondary,
+                                barCount: 5,
+                                height: 16.0,
+                                width: 36.0,
+                              ),
+                            ],
                             const Spacer(),
                             SizedBox(
                               width: 170,
@@ -410,11 +433,32 @@ class _SpeechScreenState extends State<SpeechScreen> {
                         ],
                       ),
 
-                      // Middle status / divider indicator
-                      Container(
-                        height: 40,
-                        width: 1,
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                      // Middle live audio waveform visualizer
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AudioWaveform(
+                            soundLevel: provider.soundLevelNotifier,
+                            isListening: isListeningA || isListeningB,
+                            activeColor: isListeningA ? colorScheme.primary : colorScheme.secondary,
+                            barCount: 7,
+                            height: 30.0,
+                            width: 82.0,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isListeningA || isListeningB ? "Listening..." : "Conversation",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isListeningA
+                                  ? colorScheme.primary
+                                  : (isListeningB
+                                      ? colorScheme.secondary
+                                      : colorScheme.outline),
+                            ),
+                          ),
+                        ],
                       ),
 
                       // Speaker 2 Mic

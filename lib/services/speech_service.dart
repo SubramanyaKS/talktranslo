@@ -102,6 +102,7 @@ class SpeechService {
     required String locale,
     VoidCallback? onDone,
     Function(String error)? onError,
+    Function(double level)? onSoundLevelChange,
   }) async {
     try {
       // Always stop any playing TTS before activating microphone
@@ -125,6 +126,7 @@ class SpeechService {
         onResult: (val) {
           _currentOnResult?.call(val.recognizedWords, val.finalResult);
         },
+        onSoundLevelChange: onSoundLevelChange,
         listenOptions: stt.SpeechListenOptions(
           localeId: matchedLocale,
           partialResults: true,

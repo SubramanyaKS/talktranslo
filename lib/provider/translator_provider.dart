@@ -76,6 +76,17 @@ class TranslationProvider with ChangeNotifier {
   String speakerBSpeech = '';
   String speakerBTranslation = '';
   bool isTranslatingSpeech = false;
+  final ValueNotifier<double> soundLevelNotifier = ValueNotifier<double>(0.0);
+
+  void _handleSoundLevelChange(double level) {
+    double normalized = 0.0;
+    if (level > 0) {
+      normalized = (level / 8.0).clamp(0.0, 1.0);
+    } else if (level > -35) {
+      normalized = ((level + 35) / 35.0).clamp(0.0, 1.0);
+    }
+    soundLevelNotifier.value = normalized;
+  }
 
   Future<void> selectLanguage(dynamic language) async {
     selectedLanguage = language.toString();
@@ -257,6 +268,7 @@ class TranslationProvider with ChangeNotifier {
     if (activeSpeaker == 1) {
       _speechService.stopListening();
       activeSpeaker = 0;
+      soundLevelNotifier.value = 0.0;
       notifyListeners();
       if (speakerASpeech.trim().isNotEmpty) {
         await translateSpeakerASpeech();
@@ -268,6 +280,7 @@ class TranslationProvider with ChangeNotifier {
     activeSpeaker = 1;
     speakerASpeech = '';
     speakerATranslation = '';
+    soundLevelNotifier.value = 0.0;
     notifyListeners();
 
     final available = await _speechService.startListening(
@@ -277,13 +290,16 @@ class TranslationProvider with ChangeNotifier {
         notifyListeners();
         if (isFinal && text.trim().isNotEmpty && !isTranslatingSpeech) {
           activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
           translateSpeakerASpeech();
         }
       },
       locale: selectedLanguage,
+      onSoundLevelChange: _handleSoundLevelChange,
       onDone: () {
         if (activeSpeaker == 1) {
           activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
           notifyListeners();
           if (speakerASpeech.trim().isNotEmpty &&
               speakerATranslation.isEmpty &&
@@ -296,6 +312,7 @@ class TranslationProvider with ChangeNotifier {
         if (activeSpeaker == 1) {
           speechError = "Speech recognition error: $err";
           activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
           notifyListeners();
         }
       },
@@ -303,6 +320,7 @@ class TranslationProvider with ChangeNotifier {
 
     if (!available) {
       activeSpeaker = 0;
+      soundLevelNotifier.value = 0.0;
       speechError = "Microphone is unavailable. Please check microphone permissions in Settings.";
       notifyListeners();
     }
@@ -349,6 +367,7 @@ class TranslationProvider with ChangeNotifier {
     if (activeSpeaker == 2) {
       _speechService.stopListening();
       activeSpeaker = 0;
+      soundLevelNotifier.value = 0.0;
       notifyListeners();
       if (speakerBSpeech.trim().isNotEmpty && !isTranslatingSpeech) {
         await translateSpeakerBSpeech();
@@ -360,6 +379,7 @@ class TranslationProvider with ChangeNotifier {
     activeSpeaker = 2;
     speakerBSpeech = '';
     speakerBTranslation = '';
+    soundLevelNotifier.value = 0.0;
     notifyListeners();
 
     final targetLangName = getLanguageNameFromValue(languageMap, translationLanguage);
@@ -371,13 +391,16 @@ class TranslationProvider with ChangeNotifier {
         notifyListeners();
         if (isFinal && text.trim().isNotEmpty && !isTranslatingSpeech) {
           activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
           translateSpeakerBSpeech();
         }
       },
       locale: speakerBLocale,
+      onSoundLevelChange: _handleSoundLevelChange,
       onDone: () {
         if (activeSpeaker == 2) {
           activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
           notifyListeners();
           if (speakerBSpeech.trim().isNotEmpty &&
               speakerBTranslation.isEmpty &&
@@ -390,6 +413,7 @@ class TranslationProvider with ChangeNotifier {
         if (activeSpeaker == 2) {
           speechError = "Speech recognition error: $err";
           activeSpeaker = 0;
+          soundLevelNotifier.value = 0.0;
           notifyListeners();
         }
       },
@@ -397,6 +421,7 @@ class TranslationProvider with ChangeNotifier {
 
     if (!available) {
       activeSpeaker = 0;
+      soundLevelNotifier.value = 0.0;
       speechError = "Microphone is unavailable. Please check microphone permissions in Settings.";
       notifyListeners();
     }
@@ -478,6 +503,7 @@ class TranslationProvider with ChangeNotifier {
   void stopAllSpeechAndListening() {
     _speechService.stopListening();
     _speechService.stopSpeaking();
+    soundLevelNotifier.value = 0.0;
     if (activeSpeaker != 0) {
       activeSpeaker = 0;
       notifyListeners();
