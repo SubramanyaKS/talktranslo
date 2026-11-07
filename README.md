@@ -163,6 +163,8 @@ flutter run
 
 ## 📂 Project Architecture
 
+For the complete technical breakdown, layer diagrams, and data flow pipelines, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
 ```
 lib/
 ├── main.dart                          # App entry point & multi-provider configuration
