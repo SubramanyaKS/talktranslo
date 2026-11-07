@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/history_item.dart';
+import '../services/database_service.dart';
 import '../services/speech_service.dart';
 import '../services/translator_service.dart';
 import '../utils/language.dart';
@@ -23,7 +25,7 @@ class TranslationProvider with ChangeNotifier {
   String translated = '';
   double speechRate = 1.0;
   double pitch = 1.0;
-  String selectedVoice = "en-us-x-sfg#male_1-local";
+  String selectedVoice = "natural";
 
   String? translationError;
   String? speechError;
@@ -54,7 +56,7 @@ class TranslationProvider with ChangeNotifier {
         pitch = savedPitch;
       }
       if (savedVoice != null && savedVoice.isNotEmpty) {
-        selectedVoice = savedVoice;
+        selectedVoice = normalizeVoiceChoice(savedVoice);
       }
       notifyListeners();
     } catch (e) {
@@ -98,7 +100,7 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> selectVoice(dynamic voice) async {
-    selectedVoice = voice.toString();
+    selectedVoice = normalizeVoiceChoice(voice?.toString());
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -273,7 +275,7 @@ class TranslationProvider with ChangeNotifier {
         speakerASpeech = text;
         generated = text;
         notifyListeners();
-        if (isFinal && text.trim().isNotEmpty) {
+        if (isFinal && text.trim().isNotEmpty && !isTranslatingSpeech) {
           activeSpeaker = 0;
           translateSpeakerASpeech();
         }
@@ -283,9 +285,18 @@ class TranslationProvider with ChangeNotifier {
         if (activeSpeaker == 1) {
           activeSpeaker = 0;
           notifyListeners();
-          if (speakerASpeech.trim().isNotEmpty && speakerATranslation.isEmpty) {
+          if (speakerASpeech.trim().isNotEmpty &&
+              speakerATranslation.isEmpty &&
+              !isTranslatingSpeech) {
             translateSpeakerASpeech();
           }
+        }
+      },
+      onError: (err) {
+        if (activeSpeaker == 1) {
+          speechError = "Speech recognition error: $err";
+          activeSpeaker = 0;
+          notifyListeners();
         }
       },
     );
@@ -298,7 +309,7 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> translateSpeakerASpeech() async {
-    if (speakerASpeech.trim().isEmpty) return;
+    if (speakerASpeech.trim().isEmpty || isTranslatingSpeech) return;
     try {
       isTranslatingSpeech = true;
       notifyListeners();
@@ -311,6 +322,20 @@ class TranslationProvider with ChangeNotifier {
       isTranslatingSpeech = false;
       notifyListeners();
       await speakSpeakerATranslation();
+
+      try {
+        await DatabaseService.instance.insertTranslation(
+          TranslationHistoryItem(
+            sourceText: speakerASpeech,
+            translatedText: res,
+            sourceLang: selectedLanguage,
+            targetLang: translationLanguage,
+            timestamp: DateTime.now(),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error auto-saving speech translation: $e');
+      }
     } catch (e) {
       isTranslatingSpeech = false;
       speakerATranslation = "Translation failed: $e";
@@ -325,7 +350,7 @@ class TranslationProvider with ChangeNotifier {
       _speechService.stopListening();
       activeSpeaker = 0;
       notifyListeners();
-      if (speakerBSpeech.trim().isNotEmpty) {
+      if (speakerBSpeech.trim().isNotEmpty && !isTranslatingSpeech) {
         await translateSpeakerBSpeech();
       }
       return;
@@ -344,7 +369,7 @@ class TranslationProvider with ChangeNotifier {
       onResult: (text, isFinal) {
         speakerBSpeech = text;
         notifyListeners();
-        if (isFinal && text.trim().isNotEmpty) {
+        if (isFinal && text.trim().isNotEmpty && !isTranslatingSpeech) {
           activeSpeaker = 0;
           translateSpeakerBSpeech();
         }
@@ -354,9 +379,18 @@ class TranslationProvider with ChangeNotifier {
         if (activeSpeaker == 2) {
           activeSpeaker = 0;
           notifyListeners();
-          if (speakerBSpeech.trim().isNotEmpty && speakerBTranslation.isEmpty) {
+          if (speakerBSpeech.trim().isNotEmpty &&
+              speakerBTranslation.isEmpty &&
+              !isTranslatingSpeech) {
             translateSpeakerBSpeech();
           }
+        }
+      },
+      onError: (err) {
+        if (activeSpeaker == 2) {
+          speechError = "Speech recognition error: $err";
+          activeSpeaker = 0;
+          notifyListeners();
         }
       },
     );
@@ -369,7 +403,7 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> translateSpeakerBSpeech() async {
-    if (speakerBSpeech.trim().isEmpty) return;
+    if (speakerBSpeech.trim().isEmpty || isTranslatingSpeech) return;
     try {
       isTranslatingSpeech = true;
       notifyListeners();
@@ -383,6 +417,20 @@ class TranslationProvider with ChangeNotifier {
       isTranslatingSpeech = false;
       notifyListeners();
       await speakSpeakerBTranslation();
+
+      try {
+        await DatabaseService.instance.insertTranslation(
+          TranslationHistoryItem(
+            sourceText: speakerBSpeech,
+            translatedText: res,
+            sourceLang: translationLanguage,
+            targetLang: targetCode,
+            timestamp: DateTime.now(),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error auto-saving speech translation: $e');
+      }
     } catch (e) {
       isTranslatingSpeech = false;
       speakerBTranslation = "Translation failed: $e";
@@ -412,5 +460,74 @@ class TranslationProvider with ChangeNotifier {
       speechRate,
       selectedVoice,
     );
+  }
+
+  /// Speaks any custom text in a specific language using the active pitch, rate, and voice settings.
+  Future<void> speakCustomText(String text, String language) async {
+    if (text.trim().isEmpty) return;
+    await _speechService.speakText(
+      text,
+      language,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
+  }
+
+  /// Cancels any active speech recognition session and stops TTS playback (e.g. when switching tabs).
+  void stopAllSpeechAndListening() {
+    _speechService.stopListening();
+    _speechService.stopSpeaking();
+    if (activeSpeaker != 0) {
+      activeSpeaker = 0;
+      notifyListeners();
+    }
+    if (isListening) {
+      isListening = false;
+      notifyListeners();
+    }
+  }
+
+  /// Speaks a test preview in the selected speech language with the active voice and pitch settings.
+  Future<void> testVoiceSettings() async {
+    String testText = inputController.text.trim();
+    if (testText.isEmpty) {
+      testText = _getSamplePhraseForLocale(selectedLanguage);
+    }
+    await _speechService.speakText(
+      testText,
+      selectedLanguage,
+      pitch,
+      speechRate,
+      selectedVoice,
+    );
+  }
+
+  String _getSamplePhraseForLocale(String localeOrCode) {
+    final clean = TranslationService.normalizeLanguageCode(localeOrCode);
+    switch (clean) {
+      case 'kn':
+        return "ನಮಸ್ಕಾರ, ಇದು ಟಾಕ್‌ಟ್ರಾನ್ಸ್‌ಲೋ ಧ್ವನಿ ಪರೀಕ್ಷೆ.";
+      case 'hi':
+        return "नमस्ते, यह टॉकट्रांसलो की आवाज़ का परीक्षण है।";
+      case 'es':
+        return "Hola, esta es una prueba de voz para TalkTranslo.";
+      case 'fr':
+        return "Bonjour, ceci est un test vocal pour TalkTranslo.";
+      case 'de':
+        return "Hallo, dies ist ein Sprachtest für TalkTranslo.";
+      case 'ja':
+        return "こんにちは、これはTalkTransloの音声テストです。";
+      case 'zh-cn':
+        return "您好，这是TalkTranslo的语音测试。";
+      case 'ta':
+        return "வணக்கம், இது டாக்ட்ரான்ஸ்லோவின் குரல் சோதனை.";
+      case 'te':
+        return "నమస్కారం, ఇది టాక్ ట్రాన్స్ లో వాయిస్ టెస్ట్.";
+      case 'ar':
+        return "مرحباً، هذا اختبار صوتي لتطبيق TalkTranslo.";
+      default:
+        return "Hello! This is how your selected voice sounds in TalkTranslo.";
+    }
   }
 }

@@ -1,310 +1,375 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../component/custom_dropdown.dart';
 import '../provider/image_text_provider.dart';
+import '../provider/translator_provider.dart';
 import '../utils/language.dart';
 
 class ImageTextScreen extends StatelessWidget {
   const ImageTextScreen({super.key});
 
+  void _copyToClipboard(BuildContext context, String text) async {
+    if (text.trim().isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ImageTextProvider(),
-      child: Scaffold(
-        body: SafeArea(
-          child: Consumer<ImageTextProvider>(
-            builder: (context, provider, child) {
-              // FULL SCREEN LOADING
-              if (provider.textScanning) {
-                return const Center(
-                  child: Column(
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Consumer<ImageTextProvider>(
+          builder: (context, provider, child) {
+            // FULL SCREEN LOADING
+            if (provider.textScanning) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Recognizing text...",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Language Selection Card
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Source Script / Language',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        CustomDropdown(
+                          value: provider.sourceLanguage,
+                          map: languageToScript.keys.fold(
+                            <String, String>{},
+                            (map, key) {
+                              map[key] = key;
+                              return map;
+                            },
+                          ),
+                          title: 'Select Image Text Script',
+                          onChanged: (val) {
+                            if (val != null) provider.setSourceLanguage(val);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1, thickness: 0.5),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Target Language (Translation)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        CustomDropdown(
+                          value: provider.translationLanguage,
+                          map: languageMap,
+                          title: 'Select Target Language',
+                          onChanged: (val) {
+                            if (val != null) provider.translateLanguage(val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Image Preview Container
+                  Container(
+                    height: 260,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: provider.imageFile != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: Image.file(
+                              File(provider.imageFile!.path),
+                              fit: BoxFit.contain,
+                              cacheWidth: 800,
+                              filterQuality: FilterQuality.low,
+                            ),
+                          )
+                        : Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    size: 48,
+                                    color: colorScheme.primary.withValues(alpha: 0.6),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    "Capture or select an image to extract text",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Capture Action Buttons
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text(
-                        "Recognizing text...",
-                        style: TextStyle(fontSize: 14),
+                      // Gallery Button
+                      FilledButton.tonalIcon(
+                        onPressed: () async {
+                          await provider.pickImage();
+                        },
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: const Text('Gallery'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 14),
+
+                      // Camera Button
+                      FilledButton.icon(
+                        onPressed: () async {
+                          await provider.pickFromCamera();
+                        },
+                        icon: const Icon(Icons.camera_alt_rounded),
+                        label: const Text('Camera'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                );
-              }
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          /// SOURCE LANGUAGE
-                          const Text(
-                            'Source Language (Text in Image)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                  const SizedBox(height: 16),
 
-                          const SizedBox(height: 8),
-
-                          Container(
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 6,
-                                )
+                  // Recognized Text Card
+                  if (provider.scannedText.isNotEmpty) ...[
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Extracted Text',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.copy_rounded, size: 18),
+                                  tooltip: 'Copy extracted text',
+                                  color: colorScheme.onSurfaceVariant,
+                                  onPressed: () => _copyToClipboard(context, provider.scannedText),
+                                ),
                               ],
                             ),
-                            child: CustomDropdown(
-                              value: provider.sourceLanguage,
-                              map: languageToScript.keys.fold(
-                                <String, String>{},
-                                    (map, key) {
-                                  map[key] = key;
-                                  return map;
-                                },
+                            const SizedBox(height: 6),
+                            SelectableText(
+                              provider.scannedText,
+                              style: TextStyle(
+                                fontSize: 16,
+                                height: 1.4,
+                                color: colorScheme.onSurface,
                               ),
-                              onChanged: (val) {
-                                provider.setSourceLanguage(val!);
-                              },
                             ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          /// TARGET LANGUAGE
-                          const Text(
-                            'Target Language (Translation)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          Container(
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 6,
-                                )
-                              ],
-                            ),
-                            child: CustomDropdown(
-                              value: provider.translationLanguage,
-                              map: languageMap,
-                              onChanged: (val) {
-                                provider.translateLanguage(val!);
-                              },
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          /// IMAGE PREVIEW
-                          Center(
-                            child: Container(
-                              height: 300,
+                            const SizedBox(height: 12),
+                            SizedBox(
                               width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: provider.imageFile != null
-                                  ? ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  File(provider.imageFile!.path),
-
-                                  // IMPORTANT FIXES
-                                  fit: BoxFit.contain,
-                                  cacheWidth: 800,
-                                  filterQuality: FilterQuality.low,
-                                ),
-                              )
-                                  : const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Text(
-                                    "Import or capture an image to translate text",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          /// BUTTONS
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              /// GALLERY BUTTON
-                              IconButton(
-                                padding: const EdgeInsets.all(16),
-                                iconSize: 40,
+                              child: ElevatedButton.icon(
                                 onPressed: () async {
-                                  await provider.pickImage();
-                                },
-                                style: IconButton.styleFrom(
-                                  shape: const CircleBorder(),
-                                  side: const BorderSide(
-                                    color: Colors.blue,
-                                    width: 2,
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.photo,
-                                  color: Colors.blue,
-                                ),
-                              ),
-
-                              const SizedBox(width: 16),
-
-                              /// TRANSLATE BUTTON
-                              IconButton(
-                                padding: const EdgeInsets.all(16),
-                                iconSize: 40,
-                                onPressed: provider.scannedText.isEmpty
-                                    ? null
-                                    : () async {
                                   await provider.translateText();
                                 },
-                                style: IconButton.styleFrom(
-                                  shape: const CircleBorder(),
-                                  side: BorderSide(
-                                    color: provider.scannedText.isEmpty
-                                        ? Colors.grey
-                                        : Colors.blue,
-                                    width: 2,
+                                icon: const Icon(Icons.translate_rounded, size: 18),
+                                label: const Text('Translate Scanned Text'),
+                                style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                ),
-                                icon: Icon(
-                                  Icons.translate_outlined,
-                                  color: provider.scannedText.isEmpty
-                                      ? Colors.grey
-                                      : Colors.blue,
-                                ),
-                              ),
-
-                              const SizedBox(width: 16),
-
-                              /// CAMERA BUTTON
-                              IconButton(
-                                padding: const EdgeInsets.all(16),
-                                iconSize: 40,
-                                onPressed: () async {
-                                  await provider.pickFromCamera();
-                                },
-                                style: IconButton.styleFrom(
-                                  shape: const CircleBorder(),
-                                  side: const BorderSide(
-                                    color: Colors.blue,
-                                    width: 2,
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.camera_alt_outlined,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          /// RECOGNIZED TEXT
-                          if (provider.scannedText.isNotEmpty) ...[
-                            const Text(
-                              'Recognized Text:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: SelectableText(
-                                provider.scannedText,
-                              ),
-                            ),
-
-                            const SizedBox(height: 20),
-                          ],
-
-                          /// TRANSLATED TEXT
-                          if (provider.translatedText.isNotEmpty) ...[
-                            const Text(
-                              'Translated Text:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.green),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: SelectableText(
-                                provider.translatedText,
-                                style: TextStyle(
-                                  color: Colors.green.shade700,
                                 ),
                               ),
                             ),
                           ],
-
-                          if (provider.scannedText.isEmpty)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.only(top: 20),
-                                child: Text(
-                                  'No text recognized yet',
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // Translated Text Card
+                  if (provider.translatedText.isNotEmpty) ...[
+                    Card(
+                      elevation: 0,
+                      color: colorScheme.primaryContainer.withValues(alpha: 0.25),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: colorScheme.primary.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Translated Text',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.volume_up_rounded, size: 20),
+                                      tooltip: 'Listen pronunciation',
+                                      color: colorScheme.primary,
+                                      onPressed: () {
+                                        Provider.of<TranslationProvider>(context, listen: false)
+                                            .speakCustomText(
+                                          provider.translatedText,
+                                          provider.translationLanguage,
+                                        );
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.copy_rounded, size: 18),
+                                      tooltip: 'Copy translated text',
+                                      color: colorScheme.primary,
+                                      onPressed: () =>
+                                          _copyToClipboard(context, provider.translatedText),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            SelectableText(
+                              provider.translatedText,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                height: 1.4,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  if (provider.scannedText.isEmpty && provider.imageFile == null)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Text(
+                          'No image captured yet',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

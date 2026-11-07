@@ -12,6 +12,8 @@ class TextCard extends StatefulWidget {
     this.onClear,
     this.onPaste,
     this.onShare,
+    this.isFavorite = false,
+    this.onFavorite,
   });
 
   final TextEditingController controller;
@@ -22,6 +24,8 @@ class TextCard extends StatefulWidget {
   final VoidCallback? onClear;
   final VoidCallback? onPaste;
   final VoidCallback? onShare;
+  final bool isFavorite;
+  final VoidCallback? onFavorite;
 
   @override
   State<TextCard> createState() => _TextCardState();
@@ -169,6 +173,8 @@ class _TextCardState extends State<TextCard> {
                 // Action: Paste (Only if editable)
                 if (widget.editable)
                   IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
                     icon: const Icon(Icons.paste_rounded, size: 20),
                     tooltip: 'Paste from clipboard',
                     color: colorScheme.onSurfaceVariant,
@@ -178,6 +184,8 @@ class _TextCardState extends State<TextCard> {
                 // Action: Clear (Only if editable & has text)
                 if (widget.editable && hasText)
                   IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
                     icon: const Icon(Icons.clear_rounded, size: 20),
                     tooltip: 'Clear text',
                     color: colorScheme.onSurfaceVariant,
@@ -186,6 +194,8 @@ class _TextCardState extends State<TextCard> {
 
                 // Action: Speak
                 IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.all(6),
                   icon: const Icon(Icons.volume_up_rounded, size: 20),
                   tooltip: 'Listen pronunciation',
                   color: hasText ? colorScheme.primary : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
@@ -194,15 +204,33 @@ class _TextCardState extends State<TextCard> {
 
                 // Action: Copy
                 IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.all(6),
                   icon: const Icon(Icons.copy_rounded, size: 20),
                   tooltip: 'Copy to clipboard',
                   color: hasText ? colorScheme.primary : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   onPressed: hasText ? widget.onCopy : null,
                 ),
 
+                // Action: Favorite / Star (Only if not editable & callback provided)
+                if (!widget.editable && widget.onFavorite != null)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
+                    icon: Icon(
+                      widget.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 22,
+                      color: widget.isFavorite ? Colors.amber.shade700 : colorScheme.onSurfaceVariant,
+                    ),
+                    tooltip: widget.isFavorite ? 'Saved to phrases' : 'Save to phrasebook',
+                    onPressed: hasText ? widget.onFavorite : null,
+                  ),
+
                 // Action: Share (Only if not editable)
                 if (!widget.editable)
                   IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
                     icon: const Icon(Icons.share_rounded, size: 20),
                     tooltip: 'Share translation',
                     color: hasText ? colorScheme.primary : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),

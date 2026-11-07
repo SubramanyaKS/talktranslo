@@ -38,7 +38,7 @@ final Map<String, String> talklanguageMap = {
   'Kannada': 'kn-IN',
   'Konkani':'gom-IN',
   'Malayalam':'ml-IN',
-  'Russian':'ru-RUS',
+  'Russian':'ru-RU',
   'Sanskrit':'sa-IN',
   'Spanish': 'es-ES',
   'Tamil':'ta-IN',
@@ -47,10 +47,57 @@ final Map<String, String> talklanguageMap = {
 };
 
 List<Map<String, String>> availableVoices = [
-  {"name": "Male", "value": "en-us-x-sfg#male_1-local"},
-  {"name": "Female", "value": "en-us-x-sfg#female_1-local"},
-  {"name": "Robot", "value": "en-us-x-sfg#robot-local"},
+  {"name": "Natural", "value": "natural"},
+  {"name": "Male", "value": "male"},
+  {"name": "Female", "value": "female"},
+  {"name": "Robot", "value": "robot"},
 ];
+
+/// Normalizes any legacy or custom voice string into 'natural', 'male', 'female', or 'robot'.
+String normalizeVoiceChoice(String? rawVoice) {
+  if (rawVoice == null || rawVoice.isEmpty) return 'natural';
+  final lower = rawVoice.toLowerCase();
+  if (lower.contains('female')) return 'female';
+  if (lower.contains('male')) return 'male';
+  if (lower.contains('robot')) return 'robot';
+  if (lower == 'natural' || lower == 'default') return 'natural';
+  return 'natural';
+}
+
+/// Resolves any language name, 2-letter code, or locale into a valid BCP-47 locale tag for TTS.
+String getTtsLocale(String input) {
+  final trimmed = input.trim();
+  if (trimmed.isEmpty) return 'en-US';
+
+  // 1. Exact match with a language name in talklanguageMap (e.g., 'Kannada' -> 'kn-IN')
+  if (talklanguageMap.containsKey(trimmed)) {
+    return talklanguageMap[trimmed]!;
+  }
+
+  // 2. Exact match with a value in talklanguageMap (e.g., 'kn-IN')
+  if (talklanguageMap.containsValue(trimmed)) {
+    return trimmed;
+  }
+
+  // 3. Match from 2-letter languageMap code (e.g., 'kn' -> 'Kannada' -> 'kn-IN')
+  for (final entry in languageMap.entries) {
+    if (entry.value.toLowerCase() == trimmed.toLowerCase()) {
+      return talklanguageMap[entry.key] ?? trimmed;
+    }
+  }
+
+  // 4. Normalized code prefix match (e.g., 'zh-cn' -> 'Chinese (Simplified)' -> 'zh-CN')
+  final lower = trimmed.toLowerCase();
+  for (final entry in talklanguageMap.entries) {
+    final valLower = entry.value.toLowerCase();
+    if (valLower == lower || valLower.startsWith(lower) || lower.startsWith(valLower)) {
+      return entry.value;
+    }
+  }
+
+  // Fallback to input
+  return trimmed;
+}
 
 
 final List<Map<String,String>> questionAnswer =[

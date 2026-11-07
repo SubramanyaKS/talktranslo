@@ -37,6 +37,13 @@
 - **Instant Recognition:** Image capture via Camera or Gallery automatically triggers text detection and translation.
 - **Optimized Performance:** Pre-configured image compression (`maxWidth: 1200`, `imageQuality: 40`) for rapid OCR processing.
 
+### **⭐ Translation History & Starred Phrasebook**
+- **Automatic SQLite Persistence:** Translations from text and voice conversation modes automatically save to local database storage (`sqflite`).
+- **Starred Phrases (Phrasebook):** Bookmark frequently used phrases with one tap for quick offline access.
+- **Instant Search & Filter Chips:** Fast text search across source and translated phrases, with segmented tabs for "All" and "Starred".
+- **Swipe-to-Delete with Undo:** Clean dismissible swipe actions to remove individual items with an instant undo action snackbar.
+- **Card Actions:** Pronounce translations with TTS, copy text to clipboard, and share formatted translations natively via `share_plus`.
+
 ### **⚙️ Settings & Persistent Preferences**
 - **Persistent Preferences:** Automatically saves and restores last chosen language pairs, voice speed, pitch, voice style, and theme mode using `shared_preferences`.
 - **Material 3 Dynamic Theming:** Full support for Light and Dark modes with automatic contrast adjustments.
@@ -56,7 +63,8 @@
 | **OCR Engine** | Google ML Kit Text Recognition (`google_mlkit_text_recognition`) |
 | **Speech Recognition (STT)** | `speech_to_text` 7.0.0 (with `SpeechListenOptions`) |
 | **Text-to-Speech (TTS)** | `flutter_tts` 4.2.2 |
-| **Local Persistence** | `shared_preferences` 2.3.2 |
+| **Local Persistence** | `shared_preferences` 2.3.2 & `sqflite` 2.4.1 |
+| **Native Sharing** | `share_plus` 10.1.2 |
 | **Image Handling** | `image_picker` 1.2.1 |
 | **Networking** | `http` 1.3.0 |
 
@@ -155,21 +163,26 @@ flutter run
 ```
 lib/
 ├── main.dart                          # App entry point & multi-provider configuration
+├── models/                            # Data Models
+│   └── history_item.dart              # Translation history & favorite item model
 ├── screens/                           # User Interface Screens
 │   ├── home_screen.dart              # M3 NavigationBar shell with IndexedStack
 │   ├── translate_screen.dart         # Text translation with animated swap & toolbars
 │   ├── speech_screen.dart            # Split-screen dual voice conversation mode
 │   ├── imagetext_screen.dart         # ML Kit camera/gallery OCR & translation
+│   ├── history_screen.dart           # Searchable history & starred phrasebook
 │   ├── setting_screen.dart           # Appearance, speech settings, and app info
 │   ├── speechsetting_screen.dart     # Pitch, rate, voice model, and language config
 │   ├── abouthelp_screen.dart         # Expandable FAQs and support
 │   └── welcome_screen.dart           # Onboarding splash screen
 ├── provider/                          # State Management
 │   ├── translator_provider.dart      # Translation, speech, and preferences state
+│   ├── history_provider.dart         # SQLite history & starred phrasebook state
 │   ├── image_text_provider.dart      # OCR scanning and recognition pipeline
 │   └── theme_provider.dart           # Theme mode management & persistence
 ├── services/                          # Core Business Logic
 │   ├── translator_service.dart       # 3-tier resilient translation engine
+│   ├── database_service.dart         # SQLite CRUD & database helper
 │   ├── text_recognition_service.dart # ML Kit on-device text recognizer
 │   └── speech_service.dart           # Speech-to-Text & Text-to-Speech service
 ├── component/                         # Reusable UI Widgets
@@ -192,8 +205,7 @@ For the complete architectural roadmap, milestones, and upcoming feature checkli
 
 - [x] **Phase 1:** Immediate Stabilization & Bug Squashing (Fixed camera OCR trigger, TTS language mismatch, dark theme text contrast, deprecated APIs).
 - [x] **Phase 2:** Material 3 UI/UX Transformation (M3 NavigationBar, flag search modal sheets, animated language swap, bottom toolbars, split-screen conversation mode).
-- [x] **Phase 3 (In Progress):** Preferences Persistence via `shared_preferences` (Theme, last language pairs, voice settings).
-- [ ] **Phase 3 (Next):** Local SQLite / Hive database for **Translation History** and **Starred Phrasebook**.
+- [x] **Phase 3:** Persistence, History & Phrasebook (`shared_preferences` settings persistence, SQLite history database, Starred Phrasebook, `share_plus` native export).
 - [ ] **Phase 4:** On-device offline translation via `google_mlkit_translation`, image cropping tool (`image_cropper`), and Gemini AI contextual translation.
 
 ---

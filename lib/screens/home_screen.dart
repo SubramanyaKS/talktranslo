@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:talktranslo/provider/history_provider.dart';
+import 'package:talktranslo/screens/history_screen.dart';
 import 'package:talktranslo/screens/imagetext_screen.dart';
 import 'package:talktranslo/screens/setting_screen.dart';
 import 'package:talktranslo/screens/speech_screen.dart';
 import 'package:talktranslo/screens/translate_screen.dart';
+import 'package:talktranslo/provider/translator_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     TranslateScreen(),
     SpeechScreen(),
     ImageTextScreen(),
+    HistoryScreen(),
     SettingScreen(),
   ];
 
@@ -25,10 +30,14 @@ class _HomeScreenState extends State<HomeScreen> {
     'Translate',
     'Voice Conversation',
     'Image OCR',
+    'History & Saved',
     'Settings',
   ];
 
   void _onItemTapped(int index) {
+    if (_selectedIndex != index) {
+      Provider.of<TranslationProvider>(context, listen: false).stopAllSpeechAndListening();
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -39,6 +48,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
+        actions: _selectedIndex == 3
+            ? [
+                Consumer<HistoryProvider>(
+                  builder: (context, histProvider, _) {
+                    if (histProvider.allItems.isEmpty) return const SizedBox.shrink();
+                    return IconButton(
+                      icon: const Icon(Icons.delete_sweep_rounded),
+                      tooltip: 'Clear history',
+                      onPressed: () => HistoryScreen.confirmClearDialog(context, histProvider),
+                    );
+                  },
+                ),
+              ]
+            : null,
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -62,6 +85,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.image_outlined),
             selectedIcon: Icon(Icons.image),
             label: 'Image',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history_rounded),
+            label: 'History',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

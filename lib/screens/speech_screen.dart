@@ -135,7 +135,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                                 SelectableText(
                                   provider.speakerASpeech.isEmpty
                                       ? (isListeningA
-                                          ? "Listening to Speaker 1... (speak now)"
+                                          ? "Listening in $langAName... Speak now (auto-translates on pause or tap mic)"
                                           : "Tap Speaker 1 mic below to start speaking...")
                                       : provider.speakerASpeech,
                                   style: TextStyle(
@@ -281,7 +281,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                                 SelectableText(
                                   provider.speakerBSpeech.isEmpty
                                       ? (isListeningB
-                                          ? "Listening to Speaker 2... (speak now)"
+                                          ? "Listening in $langBName... Speak now (auto-translates on pause or tap mic)"
                                           : "Tap Speaker 2 mic below to start speaking...")
                                       : provider.speakerBSpeech,
                                   style: TextStyle(

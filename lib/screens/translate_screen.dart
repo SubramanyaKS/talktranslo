@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:talktranslo/provider/history_provider.dart';
 import 'package:talktranslo/utils/language.dart';
 import 'package:talktranslo/component/custom_dropdown.dart';
 import 'package:flutter/services.dart';
@@ -31,6 +33,14 @@ class _TranslateScreenState extends State<TranslateScreen> {
     );
   }
 
+  void _handleShare(String sourceText, String translatedText) {
+    if (translatedText.trim().isEmpty) return;
+    Share.share(
+      '$sourceText\n\n→ $translatedText\n\n(Translated with TalkTranslo)',
+      subject: 'Translation from TalkTranslo',
+    );
+  }
+
   void _handleSwap(TranslationProvider provider) {
     setState(() {
       _swapTurns += 0.5; // Smooth 180° rotation
@@ -54,7 +64,15 @@ class _TranslateScreenState extends State<TranslateScreen> {
     final success = await provider.translateText();
     if (mounted) {
       setState(() => _isTranslating = false);
-      if (!success && provider.translationError != null) {
+      if (success) {
+        // Automatically save translation to local history database
+        Provider.of<HistoryProvider>(context, listen: false).addTranslation(
+          sourceText: text,
+          translatedText: provider.translatedController.text,
+          sourceLang: provider.selectedLanguage,
+          targetLang: provider.translationLanguage,
+        );
+      } else if (provider.translationError != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(provider.translationError!),
@@ -205,17 +223,41 @@ class _TranslateScreenState extends State<TranslateScreen> {
               const SizedBox(height: 16),
 
               // 📤 Output Translation Card
-              Consumer<TranslationProvider>(
-                builder: (context, provider, _) {
+              Consumer2<TranslationProvider, HistoryProvider>(
+                builder: (context, provider, histProvider, _) {
+                  final sourceText = provider.inputController.text.trim();
+                  final translatedText = provider.translatedController.text.trim();
+
+                  // Find if current translation is starred in history
+                  final matchingHistory = histProvider.allItems.where((item) {
+                    return item.sourceText == sourceText &&
+                        item.translatedText == translatedText;
+                  }).toList();
+
+                  final isFavorite = matchingHistory.isNotEmpty && matchingHistory.first.isFavorite;
+
                   return TextCard(
                     controller: provider.translatedController,
                     hint: "Translation will appear here...",
                     editable: false,
+                    isFavorite: isFavorite,
+                    onFavorite: () {
+                      if (matchingHistory.isNotEmpty) {
+                        histProvider.toggleFavorite(matchingHistory.first);
+                      } else if (sourceText.isNotEmpty && translatedText.isNotEmpty) {
+                        histProvider.addTranslation(
+                          sourceText: sourceText,
+                          translatedText: translatedText,
+                          sourceLang: provider.selectedLanguage,
+                          targetLang: provider.translationLanguage,
+                        );
+                      }
+                    },
                     onCopy: () => _copyContent(provider.translatedController.text),
                     onSpeak: provider.speakTranslatedText,
-                    onShare: () => _copyContent(
+                    onShare: () => _handleShare(
+                      provider.inputController.text,
                       provider.translatedController.text,
-                      message: 'Translation copied ready to share!',
                     ),
                   );
                 },

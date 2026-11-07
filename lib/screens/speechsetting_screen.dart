@@ -145,7 +145,13 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
                       spacing: 10,
                       children: availableVoices.map((voice) {
                         final isSelected = provider.selectedVoice == voice["value"];
+                        IconData iconData = Icons.record_voice_over_rounded;
+                        if (voice["value"] == "male") iconData = Icons.male_rounded;
+                        if (voice["value"] == "female") iconData = Icons.female_rounded;
+                        if (voice["value"] == "robot") iconData = Icons.smart_toy_outlined;
+
                         return ChoiceChip(
+                          avatar: Icon(iconData, size: 16),
                           label: Text(voice["name"]!),
                           selected: isSelected,
                           onSelected: (_) => provider.selectVoice(voice["value"]),
@@ -224,7 +230,7 @@ class _SpeechSettingScreenState extends State<SpeechSettingScreen> {
             // Test Speech Preview Button
             FilledButton.tonalIcon(
               onPressed: () {
-                provider.speakInputText();
+                provider.testVoiceSettings();
               },
               icon: const Icon(Icons.volume_up_rounded),
               label: const Text("Test Current Voice & Speech Settings"),

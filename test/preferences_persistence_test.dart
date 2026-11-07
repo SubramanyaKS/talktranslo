@@ -35,7 +35,7 @@ void main() {
       await provider1.translateLanguage('fr');
       await provider1.selectSpeedRate(1.5);
       await provider1.selectPitch(1.2);
-      await provider1.selectVoice('en-us-x-sfg#female_1-local');
+      await provider1.selectVoice('female');
 
       // Instantiate a new TranslationProvider to simulate app restart
       final provider2 = TranslationProvider();
@@ -45,7 +45,17 @@ void main() {
       expect(provider2.translationLanguage, equals('fr'));
       expect(provider2.speechRate, equals(1.5));
       expect(provider2.pitch, equals(1.2));
-      expect(provider2.selectedVoice, equals('en-us-x-sfg#female_1-local'));
+      expect(provider2.selectedVoice, equals('female'));
+    });
+
+    test('TranslationProvider normalizes legacy voice preference string to valid voice', () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pref_selected_voice', 'en-us-x-sfg#female_1-local');
+
+      final provider = TranslationProvider();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(provider.selectedVoice, equals('female'));
     });
   });
 }

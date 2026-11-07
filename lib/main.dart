@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:talktranslo/provider/history_provider.dart';
+import 'package:talktranslo/provider/image_text_provider.dart';
 import 'package:talktranslo/provider/theme_provider.dart';
 import 'package:talktranslo/provider/translator_provider.dart';
 import 'package:talktranslo/screens/welcome_screen.dart';
@@ -12,6 +14,8 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => TranslationProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => ImageTextProvider()),
       ],
       child: const MyApp(),
     ),
