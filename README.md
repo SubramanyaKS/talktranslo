@@ -21,11 +21,14 @@
 - **3-Tier Resilient Engine:** Automatic failover across primary and fallback Google translation APIs with locale normalization.
 - **Interactive Language Picker:** Search modal bottom sheet displaying national flags with instant search filtering.
 - **Animated Language Swap:** Smooth 180° rotation that swaps active source/target languages and input/output text simultaneously.
-- **Bottom Action Toolbar:** Quick buttons for **Copy**, **Clear (✕)**, **Paste from Clipboard**, **Speak (TTS)**, and **Share**.
+- **Bottom Action Toolbar:** Quick buttons for **Voice Dictation (Mic)**, **Copy**, **Clear (✕)**, **Paste from Clipboard**, **Speak (TTS)**, and **Share**.
 - **Live Character Counter:** Displays character length in real-time.
+- **Smart Startup & Streamlined Navigation:** Direct launch into HomeScreen after one-time onboarding, with 4 spacious core bottom tabs and top AppBar quick actions (Theme toggle and Settings).
 
 ### **🎙️ Dual Split-Screen Voice Conversation Mode**
 - **Two-Way Spoken Conversation:** Dedicated top/bottom cards for Speaker 1 and Speaker 2 for natural face-to-face dialogue.
+- **Face-to-Face 180° Invert Mode:** One-tap toggle that flips Speaker 1's card upside down so a partner sitting across the table can read transcripts right-side up.
+- **Conversation Reset & Copy:** Dedicated Reset button to clear both speaker cards simultaneously, plus quick Copy buttons next to TTS replay.
 - **Dual Microphone Action Dock:** Two thumb-friendly microphone buttons labeled with language flags.
 - **Live Animated Audio Waveform:** Real-time dancing soundwave visualizer responding to mic amplitude and speech cadence in the dock and active speaker card.
 - **Real-Time Live Transcripts:** Transcribes speech as you talk with animated voice glows.
@@ -34,6 +37,9 @@
 
 ### **📸 Camera & Gallery Image OCR Translation**
 - **Optical Character Recognition (OCR):** Powered by on-device Google ML Kit.
+- **Compact Horizontal Language Bar:** Sleek `[ Source Script ➔ Target Language ]` bar saving vertical screen space.
+- **Instant Clear & Reset:** One-tap overlay button and action button to discard current images and reset to camera/gallery capture state.
+- **Auto-Saved to History:** Scanned text translations automatically persist into the SQLite database history alongside text and voice translations.
 - **Integrated Image Cropper:** Built-in cropping, rotating, and aspect ratio tool (`image_cropper`) allowing users to isolate specific text areas, signs, or document sections before recognition.
 - **Multi-Script Support:** Latin, Devanagari (Hindi, Kannada, etc.), Chinese (Simplified & Traditional), Japanese, and Korean.
 - **Instant Recognition:** Image capture via Camera or Gallery automatically triggers text detection and translation.
@@ -44,7 +50,7 @@
 - **Automatic SQLite Persistence:** Translations from text and voice conversation modes automatically save to local database storage (`sqflite`).
 - **Starred Phrases (Phrasebook):** Bookmark frequently used phrases with one tap for quick offline access.
 - **Instant Search & Filter Chips:** Fast text search across source and translated phrases, with segmented tabs for "All" and "Starred".
-- **Swipe-to-Delete with Undo:** Clean dismissible swipe actions to remove individual items with an instant undo action snackbar.
+- **Swipe-to-Delete with Confirmation & Undo:** Sliding any history card displays an alert confirmation dialog before deletion to prevent accidental removal, with an instant undo action snackbar.
 - **Card Actions:** Pronounce translations with TTS, copy text to clipboard, and share formatted translations natively via `share_plus`.
 
 ### **⚙️ Settings & Persistent Preferences**

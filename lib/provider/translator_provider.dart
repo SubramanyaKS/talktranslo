@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/history_item.dart';
 import '../services/database_service.dart';
@@ -43,7 +44,7 @@ class TranslationProvider with ChangeNotifier {
       final savedPitch = prefs.getDouble(_keyPitch);
       final savedVoice = prefs.getString(_keySelectedVoice);
 
-      if (savedSource != null && talklanguageMap.containsValue(savedSource)) {
+      if (savedSource != null && (translateSourceLanguageMap.containsValue(savedSource) || savedSource == 'auto')) {
         selectedLanguage = savedSource;
       }
       if (savedTarget != null && languageMap.containsValue(savedTarget)) {
@@ -86,6 +87,18 @@ class TranslationProvider with ChangeNotifier {
       normalized = ((level + 35) / 35.0).clamp(0.0, 1.0);
     }
     soundLevelNotifier.value = normalized;
+  }
+
+  /// Clears both speaker cards' transcripts and translations in conversation mode.
+  void clearConversation() {
+    _speechService.stopListening();
+    activeSpeaker = 0;
+    speakerASpeech = '';
+    speakerATranslation = '';
+    speakerBSpeech = '';
+    speakerBTranslation = '';
+    soundLevelNotifier.value = 0.0;
+    notifyListeners();
   }
 
   Future<void> selectLanguage(dynamic language) async {
@@ -144,14 +157,23 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> swapLanguages() async {
+    // Cannot swap when source is set to Auto Detect
+    if (selectedLanguage == 'auto') return;
+    HapticFeedback.lightImpact();
+
     final sourceName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
     final targetName = getLanguageNameFromValue(languageMap, translationLanguage);
 
     if (talklanguageMap.containsKey(targetName)) {
       selectedLanguage = talklanguageMap[targetName]!;
+    } else if (targetName == 'English' || targetName.startsWith('English')) {
+      selectedLanguage = selectedLanguage == 'en-US' ? 'en-US' : 'en-IN';
     }
+
     if (languageMap.containsKey(sourceName)) {
       translationLanguage = languageMap[sourceName]!;
+    } else if (sourceName.startsWith('English')) {
+      translationLanguage = 'en';
     }
 
     final prevInput = inputController.text;
@@ -180,6 +202,7 @@ class TranslationProvider with ChangeNotifier {
       final translatedText = await _translationService.translateText(
         text,
         translationLanguage,
+        sourceLanguage: selectedLanguage,
       );
       translatedController.text = translatedText;
       notifyListeners();
@@ -241,24 +264,57 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> toggleListening() async {
-    if (!isListening) {
-      final available = await _speechService.startListening(
-        onResult: (text, _) {
-          generated = text;
-          notifyListeners();
-        },
-        locale: selectedLanguage,
-        onDone: () {
-          isListening = false;
-          notifyListeners();
-        },
-      );
-      isListening = available;
-    } else {
+    HapticFeedback.lightImpact();
+    speechError = null;
+
+    if (isListening) {
       _speechService.stopListening();
       isListening = false;
+      notifyListeners();
+      return;
     }
+
+    _speechService.stopSpeaking();
+    isListening = true;
     notifyListeners();
+
+    // If 'auto', listen using device default locale
+    final localeToUse = (selectedLanguage == 'auto')
+        ? (WidgetsBinding.instance.platformDispatcher.locale.toLanguageTag().replaceAll('_', '-'))
+        : selectedLanguage;
+
+    final available = await _speechService.startListening(
+      onResult: (text, isFinal) {
+        generated = text;
+        inputController.text = text;
+        inputController.selection = TextSelection.fromPosition(
+          TextPosition(offset: inputController.text.length),
+        );
+        notifyListeners();
+        if (isFinal) {
+          isListening = false;
+          notifyListeners();
+        }
+      },
+      locale: localeToUse,
+      onDone: () {
+        if (isListening) {
+          isListening = false;
+          notifyListeners();
+        }
+      },
+      onError: (err) {
+        isListening = false;
+        speechError = err;
+        notifyListeners();
+      },
+    );
+
+    if (!available) {
+      isListening = false;
+      speechError = "Microphone is unavailable. Please check permissions.";
+      notifyListeners();
+    }
   }
 
   // Dual Conversational Mode Handlers
@@ -383,7 +439,14 @@ class TranslationProvider with ChangeNotifier {
     notifyListeners();
 
     final targetLangName = getLanguageNameFromValue(languageMap, translationLanguage);
-    final speakerBLocale = talklanguageMap[targetLangName] ?? 'kn-IN';
+    String speakerBLocale;
+    if (talklanguageMap.containsKey(targetLangName)) {
+      speakerBLocale = talklanguageMap[targetLangName]!;
+    } else if (translationLanguage == 'en') {
+      speakerBLocale = (selectedLanguage == 'en-US') ? 'en-US' : 'en-IN';
+    } else {
+      speakerBLocale = 'kn-IN';
+    }
 
     final available = await _speechService.startListening(
       onResult: (text, isFinal) {

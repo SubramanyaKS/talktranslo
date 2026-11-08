@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talktranslo/screens/home_screen.dart';
 import '../utils/constant.dart';
 
@@ -104,10 +105,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
+                        onPressed: () async {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('pref_has_seen_onboarding', true);
+                          if (!context.mounted) return;
+                          Navigator.of(context).pushReplacement(
                             MaterialPageRoute(
-                              builder: (context) => HomeScreen(),
+                              builder: (context) => const HomeScreen(),
                             ),
                           );
                         },

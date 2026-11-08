@@ -131,8 +131,8 @@ class SpeechService {
           localeId: matchedLocale,
           partialResults: true,
           cancelOnError: false, // Don't abort on minor noise or hesitation
-          listenMode: stt.ListenMode.confirmation, // Optimized for conversational phrases
-          pauseFor: const Duration(milliseconds: 2500), // 2.5s pause before auto-finalizing
+          listenMode: stt.ListenMode.dictation, // Dictation mode allows continuous conversational sentences without early cutoff
+          pauseFor: const Duration(seconds: 3), // 3s pause before auto-finalizing to avoid premature mic cutoff
           listenFor: const Duration(seconds: 40), // Up to 40s total speech window
         ),
       );

@@ -1,5 +1,6 @@
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:talktranslo/component/audio_waveform.dart';
 import 'package:talktranslo/component/custom_dropdown.dart';
@@ -15,6 +16,22 @@ class SpeechScreen extends StatefulWidget {
 }
 
 class _SpeechScreenState extends State<SpeechScreen> {
+  bool _isFaceToFace = false;
+
+  void _copyText(BuildContext context, String text) async {
+    if (text.trim().isEmpty) return;
+    HapticFeedback.selectionClick();
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -29,15 +46,69 @@ class _SpeechScreenState extends State<SpeechScreen> {
 
         final isListeningA = provider.activeSpeaker == 1;
         final isListeningB = provider.activeSpeaker == 2;
+        final hasConversation = provider.speakerASpeech.isNotEmpty ||
+            provider.speakerATranslation.isNotEmpty ||
+            provider.speakerBSpeech.isNotEmpty ||
+            provider.speakerBTranslation.isNotEmpty;
 
         return Scaffold(
           body: SafeArea(
             child: Column(
               children: [
+                // Top Action Toolbar: Face-to-Face Mode & Clear Conversation
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      FilterChip(
+                        avatar: Icon(
+                          _isFaceToFace
+                              ? Icons.screen_rotation_rounded
+                              : Icons.stay_current_portrait_rounded,
+                          size: 16,
+                          color: _isFaceToFace ? colorScheme.onPrimary : colorScheme.primary,
+                        ),
+                        label: Text(
+                          _isFaceToFace ? 'Face-to-Face (180° Inverted)' : 'Face-to-Face Mode',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _isFaceToFace ? colorScheme.onPrimary : colorScheme.onSurface,
+                          ),
+                        ),
+                        selected: _isFaceToFace,
+                        selectedColor: colorScheme.primary,
+                        showCheckmark: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        onSelected: (val) {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _isFaceToFace = val;
+                          });
+                        },
+                      ),
+                      if (hasConversation)
+                        TextButton.icon(
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            provider.clearConversation();
+                          },
+                          icon: const Icon(Icons.restart_alt_rounded, size: 16),
+                          label: const Text('Reset', style: TextStyle(fontSize: 12)),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            foregroundColor: colorScheme.error,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
                 // Warning Banner if Speech Error
                 if (provider.speechError != null)
                   Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: colorScheme.errorContainer,
@@ -65,159 +136,169 @@ class _SpeechScreenState extends State<SpeechScreen> {
                     ),
                   ),
 
-                // Top Section: Speaker 1 (A)
+                // Top Section: Speaker 1 (A) - Supports 180° Face-to-Face Invert
                 Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isListeningA
-                          ? colorScheme.primaryContainer.withValues(alpha: 0.35)
-                          : colorScheme.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
+                  child: RotatedBox(
+                    quarterTurns: _isFaceToFace ? 2 : 0,
+                    child: Container(
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
                         color: isListeningA
-                            ? colorScheme.primary
-                            : colorScheme.outlineVariant.withValues(alpha: 0.6),
-                        width: isListeningA ? 2 : 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
+                            ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+                            : colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isListeningA
+                              ? colorScheme.primary
+                              : colorScheme.outlineVariant.withValues(alpha: 0.6),
+                          width: isListeningA ? 2 : 1,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Speaker 1 Header
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                "Speaker 1 ($flagA)",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: colorScheme.primary,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Speaker 1 Header
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  "Speaker 1 ($flagA)",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: colorScheme.primary,
+                                  ),
                                 ),
                               ),
-                            ),
-                            if (isListeningA) ...[
-                              const SizedBox(width: 8),
-                              AudioWaveform(
-                                soundLevel: provider.soundLevelNotifier,
-                                isListening: true,
-                                activeColor: colorScheme.primary,
-                                barCount: 5,
-                                height: 16.0,
-                                width: 36.0,
+                              if (isListeningA) ...[
+                                const SizedBox(width: 6),
+                                AudioWaveform(
+                                  soundLevel: provider.soundLevelNotifier,
+                                  isListening: true,
+                                  activeColor: colorScheme.primary,
+                                  barCount: 4,
+                                  height: 14.0,
+                                  width: 28.0,
+                                ),
+                              ],
+                              const Spacer(),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 145, minWidth: 100),
+                                child: CustomDropdown(
+                                  value: provider.selectedLanguage,
+                                  map: talklanguageMap,
+                                  title: 'Speaker 1 Language',
+                                  dense: true,
+                                  onChanged: (val) {
+                                    if (val != null) provider.selectLanguage(val);
+                                  },
+                                ),
                               ),
                             ],
-                            const Spacer(),
-                            SizedBox(
-                              width: 170,
-                              child: CustomDropdown(
-                                value: provider.selectedLanguage,
-                                map: talklanguageMap,
-                                title: 'Speaker 1 Language',
-                                onChanged: (val) {
-                                  if (val != null) provider.selectLanguage(val);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        // Transcript & Translation
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SelectableText(
-                                  provider.speakerASpeech.isEmpty
-                                      ? (isListeningA
-                                          ? "Listening in $langAName... Speak now (auto-translates on pause or tap mic)"
-                                          : "Tap Speaker 1 mic below to start speaking...")
-                                      : provider.speakerASpeech,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    color: provider.speakerASpeech.isEmpty
-                                        ? theme.hintColor
-                                        : colorScheme.onSurface,
-                                    fontStyle: provider.speakerASpeech.isEmpty
-                                        ? FontStyle.italic
-                                        : FontStyle.normal,
-                                  ),
-                                ),
-
-                                // Manual Translate action if recognized text exists
-                                if (provider.speakerASpeech.isNotEmpty &&
-                                    provider.speakerATranslation.isEmpty) ...[
-                                  const SizedBox(height: 10),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: ElevatedButton.icon(
-                                      onPressed: provider.isTranslatingSpeech
-                                          ? null
-                                          : () => provider.translateSpeakerASpeech(),
-                                      icon: provider.isTranslatingSpeech
-                                          ? const SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(strokeWidth: 2),
-                                            )
-                                          : const Icon(Icons.translate_rounded, size: 16),
-                                      label: Text(
-                                        provider.isTranslatingSpeech ? "Translating..." : "Translate",
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
+                          // Transcript & Translation
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SelectableText(
+                                    provider.speakerASpeech.isEmpty
+                                        ? (isListeningA
+                                            ? "Listening in $langAName... Speak now (auto-translates on pause or tap mic)"
+                                            : "Tap Speaker 1 mic below to start speaking...")
+                                        : provider.speakerASpeech,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      color: provider.speakerASpeech.isEmpty
+                                          ? theme.hintColor
+                                          : colorScheme.onSurface,
+                                      fontStyle: provider.speakerASpeech.isEmpty
+                                          ? FontStyle.italic
+                                          : FontStyle.normal,
                                     ),
                                   ),
-                                ],
 
-                                if (provider.speakerATranslation.isNotEmpty) ...[
-                                  const SizedBox(height: 12),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: SelectableText(
-                                          provider.speakerATranslation,
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: colorScheme.primary,
-                                          ),
+                                  // Manual Translate action if recognized text exists
+                                  if (provider.speakerASpeech.isNotEmpty &&
+                                      provider.speakerATranslation.isEmpty) ...[
+                                    const SizedBox(height: 10),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: ElevatedButton.icon(
+                                        onPressed: provider.isTranslatingSpeech
+                                            ? null
+                                            : () => provider.translateSpeakerASpeech(),
+                                        icon: provider.isTranslatingSpeech
+                                            ? const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                              )
+                                            : const Icon(Icons.translate_rounded, size: 16),
+                                        label: Text(
+                                          provider.isTranslatingSpeech ? "Translating..." : "Translate",
+                                          style: const TextStyle(fontSize: 13),
                                         ),
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.volume_up_rounded),
-                                        tooltip: 'Listen translation',
-                                        color: colorScheme.primary,
-                                        onPressed: provider.speakSpeakerATranslation,
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
+
+                                  if (provider.speakerATranslation.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    const Divider(height: 1),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: SelectableText(
+                                            provider.speakerATranslation,
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: colorScheme.primary,
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.volume_up_rounded),
+                                          tooltip: 'Listen translation',
+                                          color: colorScheme.primary,
+                                          onPressed: provider.speakSpeakerATranslation,
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.copy_rounded, size: 20),
+                                          tooltip: 'Copy translation',
+                                          color: colorScheme.primary,
+                                          onPressed: () => _copyText(context, provider.speakerATranslation),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -253,7 +334,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: colorScheme.secondary.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
@@ -262,29 +343,30 @@ class _SpeechScreenState extends State<SpeechScreen> {
                                 "Speaker 2 ($flagB)",
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   color: colorScheme.secondary,
                                 ),
                               ),
                             ),
                             if (isListeningB) ...[
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               AudioWaveform(
                                 soundLevel: provider.soundLevelNotifier,
                                 isListening: true,
                                 activeColor: colorScheme.secondary,
-                                barCount: 5,
-                                height: 16.0,
-                                width: 36.0,
+                                barCount: 4,
+                                height: 14.0,
+                                width: 28.0,
                               ),
                             ],
                             const Spacer(),
-                            SizedBox(
-                              width: 170,
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 145, minWidth: 100),
                               child: CustomDropdown(
                                 value: provider.translationLanguage,
                                 map: languageMap,
                                 title: 'Speaker 2 Language',
+                                dense: true,
                                 onChanged: (val) {
                                   if (val != null) provider.translateLanguage(val);
                                 },
@@ -366,6 +448,12 @@ class _SpeechScreenState extends State<SpeechScreen> {
                                         tooltip: 'Listen translation',
                                         color: colorScheme.secondary,
                                         onPressed: provider.speakSpeakerBTranslation,
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.copy_rounded, size: 20),
+                                        tooltip: 'Copy translation',
+                                        color: colorScheme.secondary,
+                                        onPressed: () => _copyText(context, provider.speakerBTranslation),
                                       ),
                                     ],
                                   ),
