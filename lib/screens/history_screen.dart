@@ -9,6 +9,45 @@ import '../utils/language.dart';
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
+  static void exportHistory(BuildContext context, HistoryProvider provider) {
+    final items = provider.displayItems;
+    if (items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No translations available to export'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+
+    final buffer = StringBuffer();
+    final filterTitle = provider.showFavoritesOnly ? "Starred Phrasebook" : "Translation History";
+    buffer.writeln("=== TalkTranslo - $filterTitle ===");
+    buffer.writeln("Exported: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}");
+    buffer.writeln("Total Items: ${items.length}\n");
+
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      final srcName = getLanguageNameFromValue(talklanguageMap, item.sourceLang);
+      final trgName = getLanguageNameFromValue(languageMap, item.targetLang);
+      final star = item.isFavorite ? " ★" : "";
+      buffer.writeln("${i + 1}. [$srcName ➔ $trgName$star]");
+      buffer.writeln("Source: ${item.sourceText}");
+      buffer.writeln("Translated: ${item.translatedText}");
+      buffer.writeln("");
+    }
+
+    buffer.writeln("(Exported from TalkTranslo App)");
+
+    Share.share(
+      buffer.toString(),
+      subject: 'TalkTranslo $filterTitle Export',
+    );
+  }
+
   static void confirmClearDialog(BuildContext context, HistoryProvider provider) {
     showDialog(
       context: context,
@@ -147,26 +186,41 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ),
 
-          // Filter Segmented Controls: All vs Starred
+          // Filter Segmented Controls: All vs Starred + Quick Export Action
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: SegmentedButton<bool>(
-              segments: [
-                ButtonSegment<bool>(
-                  value: false,
-                  label: Text('All History (${historyProvider.allItems.length})'),
-                  icon: const Icon(Icons.history_rounded),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SegmentedButton<bool>(
+                    segments: [
+                      ButtonSegment<bool>(
+                        value: false,
+                        label: Text('All (${historyProvider.allItems.length})'),
+                        icon: const Icon(Icons.history_rounded, size: 18),
+                      ),
+                      ButtonSegment<bool>(
+                        value: true,
+                        label: Text('Saved (${historyProvider.favoriteItems.length})'),
+                        icon: const Icon(Icons.star_rounded, size: 18),
+                      ),
+                    ],
+                    selected: {historyProvider.showFavoritesOnly},
+                    onSelectionChanged: (Set<bool> newSelection) {
+                      HapticFeedback.selectionClick();
+                      historyProvider.setShowFavoritesOnly(newSelection.first);
+                    },
+                  ),
                 ),
-                ButtonSegment<bool>(
-                  value: true,
-                  label: Text('Saved (${historyProvider.favoriteItems.length})'),
-                  icon: const Icon(Icons.star_rounded),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.share_outlined, size: 20),
+                  tooltip: 'Export / Share translations',
+                  onPressed: displayItems.isEmpty
+                      ? null
+                      : () => HistoryScreen.exportHistory(context, historyProvider),
                 ),
               ],
-              selected: {historyProvider.showFavoritesOnly},
-              onSelectionChanged: (Set<bool> newSelection) {
-                historyProvider.setShowFavoritesOnly(newSelection.first);
-              },
             ),
           ),
 

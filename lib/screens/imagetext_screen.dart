@@ -13,6 +13,7 @@ class ImageTextScreen extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context, String text) async {
     if (text.trim().isEmpty) return;
+    HapticFeedback.selectionClick();
     await Clipboard.setData(ClipboardData(text: text));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

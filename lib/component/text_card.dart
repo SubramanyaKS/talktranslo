@@ -16,6 +16,7 @@ class TextCard extends StatefulWidget {
     this.isListening = false,
     this.isFavorite = false,
     this.onFavorite,
+    this.onFullscreen,
   });
 
   final TextEditingController controller;
@@ -30,6 +31,7 @@ class TextCard extends StatefulWidget {
   final bool isListening;
   final bool isFavorite;
   final VoidCallback? onFavorite;
+  final VoidCallback? onFullscreen;
 
   @override
   State<TextCard> createState() => _TextCardState();
@@ -64,12 +66,14 @@ class _TextCardState extends State<TextCard> {
   Future<void> _handlePaste() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     if (data != null && data.text != null && data.text!.isNotEmpty) {
+      HapticFeedback.lightImpact();
       widget.controller.text = data.text!;
       if (widget.onPaste != null) widget.onPaste!();
     }
   }
 
   void _handleClear() {
+    HapticFeedback.selectionClick();
     widget.controller.clear();
     if (widget.onClear != null) widget.onClear!();
   }
@@ -232,6 +236,22 @@ class _TextCardState extends State<TextCard> {
                   onPressed: hasText ? widget.onCopy : null,
                 ),
 
+                // Action: Fullscreen Presentation (Only if not editable & callback provided)
+                if (!widget.editable && widget.onFullscreen != null)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
+                    icon: const Icon(Icons.fullscreen_rounded, size: 22),
+                    tooltip: 'Fullscreen view',
+                    color: hasText ? colorScheme.primary : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    onPressed: hasText
+                        ? () {
+                            HapticFeedback.lightImpact();
+                            widget.onFullscreen!();
+                          }
+                        : null,
+                  ),
+
                 // Action: Favorite / Star (Only if not editable & callback provided)
                 if (!widget.editable && widget.onFavorite != null)
                   IconButton(
@@ -243,7 +263,12 @@ class _TextCardState extends State<TextCard> {
                       color: widget.isFavorite ? Colors.amber.shade700 : colorScheme.onSurfaceVariant,
                     ),
                     tooltip: widget.isFavorite ? 'Saved to phrases' : 'Save to phrasebook',
-                    onPressed: hasText ? widget.onFavorite : null,
+                    onPressed: hasText
+                        ? () {
+                            HapticFeedback.selectionClick();
+                            widget.onFavorite!();
+                          }
+                        : null,
                   ),
 
                 // Action: Share (Only if not editable)

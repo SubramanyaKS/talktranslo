@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talktranslo/services/translator_service.dart';
+import 'package:talktranslo/utils/language.dart';
 import 'package:talktranslo/provider/image_text_provider.dart';
 import 'package:talktranslo/provider/translator_provider.dart';
 
@@ -46,6 +47,11 @@ void main() {
       final result = await service.translateText('', 'kn');
       expect(result, isEmpty);
     });
+
+    test('Translates with auto-detected source language', () async {
+      final result = await service.translateText('Gracias amigo', 'en', sourceLanguage: 'auto');
+      expect(result.toLowerCase(), contains('thank'));
+    });
   });
 
   group('TranslationProvider Swap and State Tests', () {
@@ -79,6 +85,28 @@ void main() {
       expect(provider.speakerBSpeech, isEmpty);
       expect(provider.speakerBTranslation, isEmpty);
       expect(provider.activeSpeaker, equals(0));
+    });
+
+    test('Swapping languages does not execute if selectedLanguage is auto', () {
+      final provider = TranslationProvider();
+      provider.selectedLanguage = 'auto';
+      provider.translationLanguage = 'kn';
+      provider.inputController.text = 'Hello';
+      provider.translatedController.text = 'ನಮಸ್ಕಾರ';
+
+      provider.swapLanguages();
+
+      // State remains unchanged
+      expect(provider.selectedLanguage, equals('auto'));
+      expect(provider.translationLanguage, equals('kn'));
+      expect(provider.inputController.text, equals('Hello'));
+      expect(provider.translatedController.text, equals('ನಮಸ್ಕಾರ'));
+    });
+
+    test('translateSourceLanguageMap contains Auto Detect as first option', () {
+      expect(translateSourceLanguageMap.containsKey('Auto Detect'), isTrue);
+      expect(translateSourceLanguageMap['Auto Detect'], equals('auto'));
+      expect(getLanguageFlag('Auto Detect'), equals('✨'));
     });
   });
 

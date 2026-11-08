@@ -47,6 +47,12 @@ final Map<String, String> talklanguageMap = {
   'Thai':'th-TH',
 };
 
+/// Language mapping for text translation source picker, including 'Auto Detect'.
+final Map<String, String> translateSourceLanguageMap = {
+  'Auto Detect': 'auto',
+  ...talklanguageMap,
+};
+
 List<Map<String, String>> availableVoices = [
   {"name": "Natural", "value": "natural"},
   {"name": "Male", "value": "male"},
@@ -68,7 +74,7 @@ String normalizeVoiceChoice(String? rawVoice) {
 /// Resolves any language name, 2-letter code, or locale into a valid BCP-47 locale tag for TTS.
 String getTtsLocale(String input) {
   final trimmed = input.trim();
-  if (trimmed.isEmpty) return 'en-US';
+  if (trimmed.isEmpty || trimmed.toLowerCase() == 'auto') return 'en-US';
   if (trimmed.toLowerCase() == 'english' || trimmed.toLowerCase() == 'en') return 'en-US';
   if (trimmed.toLowerCase() == 'en-in' || trimmed.toLowerCase() == 'english (india)' || trimmed.toLowerCase() == 'english (in)') return 'en-IN';
   if (trimmed.toLowerCase() == 'en-us' || trimmed.toLowerCase() == 'english (us)') return 'en-US';
@@ -139,6 +145,7 @@ final Map<String, String> languageToScript = {
 };
 
 final Map<String, String> languageFlagMap = {
+  'Auto Detect': '✨',
   'Arabic': '🇸🇦',
   'Assamese': '🇮🇳',
   'Bengali': '🇧🇩',

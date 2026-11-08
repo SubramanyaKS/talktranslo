@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../component/text_card.dart';
 import '../provider/translator_provider.dart';
+import 'fullscreen_text_screen.dart';
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
@@ -41,7 +42,32 @@ class _TranslateScreenState extends State<TranslateScreen> {
     );
   }
 
+  void _openFullscreen(TranslationProvider provider) {
+    if (provider.translatedController.text.trim().isEmpty) return;
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FullscreenTextScreen(
+          translatedText: provider.translatedController.text,
+          targetLanguage: provider.translationLanguage,
+          sourceText: provider.inputController.text,
+          onSpeak: provider.speakTranslatedText,
+        ),
+      ),
+    );
+  }
+
   void _handleSwap(TranslationProvider provider) {
+    if (provider.selectedLanguage == 'auto') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot swap languages when source is Auto Detect'),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
     setState(() {
       _swapTurns += 0.5; // Smooth 180° rotation
     });
@@ -49,6 +75,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   Future<void> _handleTranslate(TranslationProvider provider) async {
+    HapticFeedback.lightImpact();
     final text = provider.inputController.text.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -122,7 +149,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                         Expanded(
                           child: CustomDropdown(
                             value: provider.selectedLanguage,
-                            map: talklanguageMap,
+                            map: translateSourceLanguageMap,
                             title: 'Source Language',
                             onChanged: (val) {
                               if (val != null) provider.selectLanguage(val);
@@ -262,6 +289,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                       provider.inputController.text,
                       provider.translatedController.text,
                     ),
+                    onFullscreen: () => _openFullscreen(provider),
                   );
                 },
               ),

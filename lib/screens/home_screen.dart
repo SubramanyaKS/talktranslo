@@ -59,10 +59,20 @@ class _HomeScreenState extends State<HomeScreen> {
             Consumer<HistoryProvider>(
               builder: (context, histProvider, _) {
                 if (histProvider.allItems.isEmpty) return const SizedBox.shrink();
-                return IconButton(
-                  icon: const Icon(Icons.delete_sweep_rounded),
-                  tooltip: 'Clear history',
-                  onPressed: () => HistoryScreen.confirmClearDialog(context, histProvider),
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined),
+                      tooltip: 'Export history',
+                      onPressed: () => HistoryScreen.exportHistory(context, histProvider),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_sweep_rounded),
+                      tooltip: 'Clear history',
+                      onPressed: () => HistoryScreen.confirmClearDialog(context, histProvider),
+                    ),
+                  ],
                 );
               },
             ),

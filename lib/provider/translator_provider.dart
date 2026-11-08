@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/history_item.dart';
 import '../services/database_service.dart';
@@ -43,7 +44,7 @@ class TranslationProvider with ChangeNotifier {
       final savedPitch = prefs.getDouble(_keyPitch);
       final savedVoice = prefs.getString(_keySelectedVoice);
 
-      if (savedSource != null && talklanguageMap.containsValue(savedSource)) {
+      if (savedSource != null && (translateSourceLanguageMap.containsValue(savedSource) || savedSource == 'auto')) {
         selectedLanguage = savedSource;
       }
       if (savedTarget != null && languageMap.containsValue(savedTarget)) {
@@ -156,6 +157,10 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> swapLanguages() async {
+    // Cannot swap when source is set to Auto Detect
+    if (selectedLanguage == 'auto') return;
+    HapticFeedback.lightImpact();
+
     final sourceName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
     final targetName = getLanguageNameFromValue(languageMap, translationLanguage);
 
@@ -197,6 +202,7 @@ class TranslationProvider with ChangeNotifier {
       final translatedText = await _translationService.translateText(
         text,
         translationLanguage,
+        sourceLanguage: selectedLanguage,
       );
       translatedController.text = translatedText;
       notifyListeners();
@@ -258,6 +264,7 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> toggleListening() async {
+    HapticFeedback.lightImpact();
     speechError = null;
 
     if (isListening) {
@@ -270,6 +277,11 @@ class TranslationProvider with ChangeNotifier {
     _speechService.stopSpeaking();
     isListening = true;
     notifyListeners();
+
+    // If 'auto', listen using device default locale
+    final localeToUse = (selectedLanguage == 'auto')
+        ? (WidgetsBinding.instance.platformDispatcher.locale.toLanguageTag().replaceAll('_', '-'))
+        : selectedLanguage;
 
     final available = await _speechService.startListening(
       onResult: (text, isFinal) {
@@ -284,7 +296,7 @@ class TranslationProvider with ChangeNotifier {
           notifyListeners();
         }
       },
-      locale: selectedLanguage,
+      locale: localeToUse,
       onDone: () {
         if (isListening) {
           isListening = false;

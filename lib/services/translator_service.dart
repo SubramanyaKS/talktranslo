@@ -19,16 +19,19 @@ class TranslationService {
     return lower;
   }
 
-  Future<String> translateText(String text, String targetLanguage) async {
+  Future<String> translateText(String text, String targetLanguage, {String sourceLanguage = 'auto'}) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return "";
 
     final targetCode = normalizeLanguageCode(targetLanguage);
+    final sourceCode = (sourceLanguage.isEmpty || sourceLanguage == 'auto')
+        ? 'auto'
+        : normalizeLanguageCode(sourceLanguage);
 
     // Tier 1: Try package:translator
     try {
       final translation = await _translator
-          .translate(trimmed, to: targetCode)
+          .translate(trimmed, from: sourceCode, to: targetCode)
           .timeout(const Duration(seconds: 8));
       if (translation.text.trim().isNotEmpty) {
         return translation.text;
@@ -40,7 +43,7 @@ class TranslationService {
     // Tier 2: Direct HTTP request to Google Translate GTX endpoint
     try {
       final url = Uri.parse(
-        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$targetCode&dt=t&q=${Uri.encodeComponent(trimmed)}',
+        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceCode&tl=$targetCode&dt=t&q=${Uri.encodeComponent(trimmed)}',
       );
       final response = await http.get(url).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
@@ -63,7 +66,7 @@ class TranslationService {
     // Tier 3: Direct HTTP request to Google Translate Chrome extension endpoint
     try {
       final url = Uri.parse(
-        'https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=$targetCode&q=${Uri.encodeComponent(trimmed)}',
+        'https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=$sourceCode&tl=$targetCode&q=${Uri.encodeComponent(trimmed)}',
       );
       final response = await http.get(url).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {

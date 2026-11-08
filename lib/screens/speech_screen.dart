@@ -20,6 +20,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
 
   void _copyText(BuildContext context, String text) async {
     if (text.trim().isEmpty) return;
+    HapticFeedback.selectionClick();
     await Clipboard.setData(ClipboardData(text: text));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -81,6 +82,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                         showCheckmark: false,
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         onSelected: (val) {
+                          HapticFeedback.selectionClick();
                           setState(() {
                             _isFaceToFace = val;
                           });
@@ -88,7 +90,10 @@ class _SpeechScreenState extends State<SpeechScreen> {
                       ),
                       if (hasConversation)
                         TextButton.icon(
-                          onPressed: () => provider.clearConversation(),
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            provider.clearConversation();
+                          },
                           icon: const Icon(Icons.restart_alt_rounded, size: 16),
                           label: const Text('Reset', style: TextStyle(fontSize: 12)),
                           style: TextButton.styleFrom(
