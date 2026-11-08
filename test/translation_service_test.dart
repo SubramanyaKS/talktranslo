@@ -1,14 +1,22 @@
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talktranslo/services/translator_service.dart';
+import 'package:talktranslo/provider/image_text_provider.dart';
 import 'package:talktranslo/provider/translator_provider.dart';
 
 class _RealHttpOverrides extends HttpOverrides {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _RealHttpOverrides();
   SharedPreferences.setMockInitialValues({});
+
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(const MethodChannel('flutter_tts'), (call) async => 1);
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(const MethodChannel('speech_to_text'), (call) async => true);
 
   group('TranslationService Live Tests', () {
     final service = TranslationService();
@@ -54,6 +62,35 @@ void main() {
       expect(provider.translationLanguage, equals('en'));
       expect(provider.inputController.text, equals('ನಮಸ್ಕಾರ'));
       expect(provider.translatedController.text, equals('Hello'));
+    });
+
+    test('clearConversation resets all dual-speaker transcripts, translations, and active state', () {
+      final provider = TranslationProvider();
+      provider.speakerASpeech = 'Hello from A';
+      provider.speakerATranslation = 'ನಮಸ್ಕಾರ';
+      provider.speakerBSpeech = 'ಹೇಗಿದ್ದೀರಿ';
+      provider.speakerBTranslation = 'How are you';
+      provider.activeSpeaker = 1;
+
+      provider.clearConversation();
+
+      expect(provider.speakerASpeech, isEmpty);
+      expect(provider.speakerATranslation, isEmpty);
+      expect(provider.speakerBSpeech, isEmpty);
+      expect(provider.speakerBTranslation, isEmpty);
+      expect(provider.activeSpeaker, equals(0));
+    });
+  });
+
+  group('ImageTextProvider State Tests', () {
+    test('clearData resets scannedText, translatedText, imageFile, and textScanning', () {
+      final provider = ImageTextProvider();
+      provider.clearData();
+
+      expect(provider.scannedText, isEmpty);
+      expect(provider.translatedText, isEmpty);
+      expect(provider.imageFile, isNull);
+      expect(provider.textScanning, isFalse);
     });
   });
 }

@@ -1,29 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:talktranslo/provider/history_provider.dart';
+import 'package:talktranslo/provider/theme_provider.dart';
+import 'package:talktranslo/provider/translator_provider.dart';
 import 'package:talktranslo/screens/history_screen.dart';
 import 'package:talktranslo/screens/imagetext_screen.dart';
 import 'package:talktranslo/screens/setting_screen.dart';
 import 'package:talktranslo/screens/speech_screen.dart';
 import 'package:talktranslo/screens/translate_screen.dart';
-import 'package:talktranslo/provider/translator_provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialIndex;
+  const HomeScreen({super.key, this.initialIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
 
   static const List<Widget> _pages = <Widget>[
     TranslateScreen(),
     SpeechScreen(),
     ImageTextScreen(),
     HistoryScreen(),
-    SettingScreen(),
   ];
 
   static const List<String> _titles = <String>[
@@ -31,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'Voice Conversation',
     'Image OCR',
     'History & Saved',
-    'Settings',
   ];
 
   void _onItemTapped(int index) {
@@ -48,20 +54,43 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
-        actions: _selectedIndex == 3
-            ? [
-                Consumer<HistoryProvider>(
-                  builder: (context, histProvider, _) {
-                    if (histProvider.allItems.isEmpty) return const SizedBox.shrink();
-                    return IconButton(
-                      icon: const Icon(Icons.delete_sweep_rounded),
-                      tooltip: 'Clear history',
-                      onPressed: () => HistoryScreen.confirmClearDialog(context, histProvider),
-                    );
-                  },
+        actions: [
+          if (_selectedIndex == 3)
+            Consumer<HistoryProvider>(
+              builder: (context, histProvider, _) {
+                if (histProvider.allItems.isEmpty) return const SizedBox.shrink();
+                return IconButton(
+                  icon: const Icon(Icons.delete_sweep_rounded),
+                  tooltip: 'Clear history',
+                  onPressed: () => HistoryScreen.confirmClearDialog(context, histProvider),
+                );
+              },
+            ),
+          // Quick Light/Dark Mode toggle
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) {
+              return IconButton(
+                icon: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                 ),
-              ]
-            : null,
+                tooltip: themeProvider.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                onPressed: () => themeProvider.toggleTheme(),
+              );
+            },
+          ),
+          // Settings navigation button
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () {
+              Provider.of<TranslationProvider>(context, listen: false).stopAllSpeechAndListening();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -77,24 +106,19 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Translate',
           ),
           NavigationDestination(
-            icon: Icon(Icons.mic_none_outlined),
-            selectedIcon: Icon(Icons.mic),
-            label: 'Speak',
+            icon: Icon(Icons.record_voice_over_outlined),
+            selectedIcon: Icon(Icons.record_voice_over_rounded),
+            label: 'Conversation',
           ),
           NavigationDestination(
-            icon: Icon(Icons.image_outlined),
-            selectedIcon: Icon(Icons.image),
-            label: 'Image',
+            icon: Icon(Icons.document_scanner_outlined),
+            selectedIcon: Icon(Icons.document_scanner_rounded),
+            label: 'Camera OCR',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history_rounded),
-            label: 'History',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+            icon: Icon(Icons.bookmarks_outlined),
+            selectedIcon: Icon(Icons.bookmarks_rounded),
+            label: 'Saved & History',
           ),
         ],
       ),

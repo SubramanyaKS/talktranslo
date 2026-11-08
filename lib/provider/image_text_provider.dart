@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import '../models/history_item.dart';
+import '../services/database_service.dart';
 import '../services/text_recognition_service.dart';
 import '../services/translator_service.dart';
 import '../utils/language.dart';
@@ -42,6 +44,21 @@ class ImageTextProvider with ChangeNotifier {
       _translatedText = translatedText;
       _textScanning = false;
       notifyListeners();
+
+      // Auto-save successful OCR translation to History
+      try {
+        await DatabaseService.instance.insertTranslation(
+          TranslationHistoryItem(
+            sourceText: _scannedText,
+            translatedText: translatedText,
+            sourceLang: _sourceLanguage,
+            targetLang: _translationLanguage,
+            timestamp: DateTime.now(),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error auto-saving OCR translation: $e');
+      }
     } catch (e) {
       _translatedText = 'Translation error: $e';
       _textScanning = false;
@@ -205,6 +222,7 @@ class ImageTextProvider with ChangeNotifier {
   void clearData() {
     _imageFile = null;
     _scannedText = '';
+    _translatedText = '';
     _textScanning = false;
     notifyListeners();
   }

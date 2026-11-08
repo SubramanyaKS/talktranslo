@@ -38,14 +38,26 @@ void main() {
       expect(getTtsLocale('Kannada'), equals('kn-IN'));
       expect(getTtsLocale('Hindi'), equals('hi-IN'));
       expect(getTtsLocale('English'), equals('en-US'));
+      expect(getTtsLocale('English (India)'), equals('en-IN'));
+      expect(getTtsLocale('English (US)'), equals('en-US'));
       expect(getTtsLocale('Spanish'), equals('es-ES'));
 
       // Direct BCP-47 locales
       expect(getTtsLocale('kn-IN'), equals('kn-IN'));
+      expect(getTtsLocale('en-IN'), equals('en-IN'));
       expect(getTtsLocale('en-US'), equals('en-US'));
 
       // Fallback on empty or unknown
       expect(getTtsLocale(''), equals('en-US'));
+    });
+
+    test('English India and US dropdown mapping and flag resolution', () {
+      expect(talklanguageMap['English (India)'], equals('en-IN'));
+      expect(talklanguageMap['English (US)'], equals('en-US'));
+      expect(getLanguageNameFromValue(talklanguageMap, 'en-IN'), equals('English (India)'));
+      expect(getLanguageNameFromValue(talklanguageMap, 'en-US'), equals('English (US)'));
+      expect(getLanguageFlag('English (India)'), equals('🇮🇳'));
+      expect(getLanguageFlag('English (US)'), equals('🇺🇸'));
     });
   });
 }

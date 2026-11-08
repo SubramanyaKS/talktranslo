@@ -8,12 +8,14 @@ class CustomDropdown extends StatelessWidget {
     required this.map,
     this.title = 'Select Language',
     this.onChanged,
+    this.dense = false,
   });
 
   final String value;
   final Map<String, String> map;
   final String title;
   final void Function(String?)? onChanged;
+  final bool dense;
 
   void _openLanguagePicker(BuildContext context) {
     showModalBottomSheet<void>(
@@ -43,12 +45,15 @@ class CustomDropdown extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openLanguagePicker(context),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(dense ? 12 : 14),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: dense ? 10 : 14,
+            vertical: dense ? 7 : 12,
+          ),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(dense ? 12 : 14),
             border: Border.all(
               color: colorScheme.outlineVariant.withValues(alpha: 0.6),
             ),
@@ -58,14 +63,14 @@ class CustomDropdown extends StatelessWidget {
             children: [
               Text(
                 flag,
-                style: const TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: dense ? 16 : 20),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: dense ? 6 : 8),
               Expanded(
                 child: Text(
                   displayName,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: dense ? 13 : 15,
                     fontWeight: FontWeight.w600,
                     color: colorScheme.onSurface,
                   ),
@@ -75,7 +80,7 @@ class CustomDropdown extends StatelessWidget {
               Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: colorScheme.onSurfaceVariant,
-                size: 22,
+                size: dense ? 18 : 22,
               ),
             ],
           ),

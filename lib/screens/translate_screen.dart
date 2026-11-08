@@ -174,9 +174,12 @@ class _TranslateScreenState extends State<TranslateScreen> {
                     controller: provider.inputController,
                     hint: "Type text to translate...",
                     editable: true,
+                    isListening: provider.isListening,
+                    onMicTap: provider.toggleListening,
                     onCopy: () => _copyContent(provider.inputController.text),
                     onSpeak: provider.speakInputText,
                     onClear: () {
+                      provider.inputController.clear();
                       provider.translatedController.clear();
                       setState(() {});
                     },
@@ -191,7 +194,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 builder: (context, provider, _) {
                   return SizedBox(
                     height: 52,
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: _isTranslating ? null : () => _handleTranslate(provider),
                       icon: _isTranslating
                           ? const SizedBox(
@@ -210,7 +213,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
+                      style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),

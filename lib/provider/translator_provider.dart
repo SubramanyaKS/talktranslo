@@ -88,6 +88,18 @@ class TranslationProvider with ChangeNotifier {
     soundLevelNotifier.value = normalized;
   }
 
+  /// Clears both speaker cards' transcripts and translations in conversation mode.
+  void clearConversation() {
+    _speechService.stopListening();
+    activeSpeaker = 0;
+    speakerASpeech = '';
+    speakerATranslation = '';
+    speakerBSpeech = '';
+    speakerBTranslation = '';
+    soundLevelNotifier.value = 0.0;
+    notifyListeners();
+  }
+
   Future<void> selectLanguage(dynamic language) async {
     selectedLanguage = language.toString();
     notifyListeners();
@@ -149,9 +161,14 @@ class TranslationProvider with ChangeNotifier {
 
     if (talklanguageMap.containsKey(targetName)) {
       selectedLanguage = talklanguageMap[targetName]!;
+    } else if (targetName == 'English' || targetName.startsWith('English')) {
+      selectedLanguage = selectedLanguage == 'en-US' ? 'en-US' : 'en-IN';
     }
+
     if (languageMap.containsKey(sourceName)) {
       translationLanguage = languageMap[sourceName]!;
+    } else if (sourceName.startsWith('English')) {
+      translationLanguage = 'en';
     }
 
     final prevInput = inputController.text;
@@ -241,24 +258,51 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> toggleListening() async {
-    if (!isListening) {
-      final available = await _speechService.startListening(
-        onResult: (text, _) {
-          generated = text;
-          notifyListeners();
-        },
-        locale: selectedLanguage,
-        onDone: () {
-          isListening = false;
-          notifyListeners();
-        },
-      );
-      isListening = available;
-    } else {
+    speechError = null;
+
+    if (isListening) {
       _speechService.stopListening();
       isListening = false;
+      notifyListeners();
+      return;
     }
+
+    _speechService.stopSpeaking();
+    isListening = true;
     notifyListeners();
+
+    final available = await _speechService.startListening(
+      onResult: (text, isFinal) {
+        generated = text;
+        inputController.text = text;
+        inputController.selection = TextSelection.fromPosition(
+          TextPosition(offset: inputController.text.length),
+        );
+        notifyListeners();
+        if (isFinal) {
+          isListening = false;
+          notifyListeners();
+        }
+      },
+      locale: selectedLanguage,
+      onDone: () {
+        if (isListening) {
+          isListening = false;
+          notifyListeners();
+        }
+      },
+      onError: (err) {
+        isListening = false;
+        speechError = err;
+        notifyListeners();
+      },
+    );
+
+    if (!available) {
+      isListening = false;
+      speechError = "Microphone is unavailable. Please check permissions.";
+      notifyListeners();
+    }
   }
 
   // Dual Conversational Mode Handlers
@@ -383,7 +427,14 @@ class TranslationProvider with ChangeNotifier {
     notifyListeners();
 
     final targetLangName = getLanguageNameFromValue(languageMap, translationLanguage);
-    final speakerBLocale = talklanguageMap[targetLangName] ?? 'kn-IN';
+    String speakerBLocale;
+    if (talklanguageMap.containsKey(targetLangName)) {
+      speakerBLocale = talklanguageMap[targetLangName]!;
+    } else if (translationLanguage == 'en') {
+      speakerBLocale = (selectedLanguage == 'en-US') ? 'en-US' : 'en-IN';
+    } else {
+      speakerBLocale = 'kn-IN';
+    }
 
     final available = await _speechService.startListening(
       onResult: (text, isFinal) {

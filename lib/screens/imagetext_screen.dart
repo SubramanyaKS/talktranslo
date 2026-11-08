@@ -59,12 +59,12 @@ class ImageTextScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Language Selection Card
+                  // Compact Horizontal Language Selection Bar
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: colorScheme.outlineVariant.withValues(alpha: 0.6),
                       ),
@@ -76,51 +76,71 @@ class ImageTextScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          'Source Script / Language',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Source Script',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                              CustomDropdown(
+                                value: provider.sourceLanguage,
+                                map: languageToScript.keys.fold(
+                                  <String, String>{},
+                                  (map, key) {
+                                    map[key] = key;
+                                    return map;
+                                  },
+                                ),
+                                title: 'Select Script',
+                                dense: true,
+                                onChanged: (val) {
+                                  if (val != null) provider.setSourceLanguage(val);
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        CustomDropdown(
-                          value: provider.sourceLanguage,
-                          map: languageToScript.keys.fold(
-                            <String, String>{},
-                            (map, key) {
-                              map[key] = key;
-                              return map;
-                            },
-                          ),
-                          title: 'Select Image Text Script',
-                          onChanged: (val) {
-                            if (val != null) provider.setSourceLanguage(val);
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1, thickness: 0.5),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Target Language (Translation)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.secondary,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 20,
+                            color: colorScheme.outline,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        CustomDropdown(
-                          value: provider.translationLanguage,
-                          map: languageMap,
-                          title: 'Select Target Language',
-                          onChanged: (val) {
-                            if (val != null) provider.translateLanguage(val);
-                          },
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Translate To',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.secondary,
+                                ),
+                              ),
+                              CustomDropdown(
+                                value: provider.translationLanguage,
+                                map: languageMap,
+                                title: 'Target Language',
+                                dense: true,
+                                onChanged: (val) {
+                                  if (val != null) provider.translateLanguage(val);
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -177,7 +197,20 @@ class ImageTextScreen extends StatelessWidget {
                                 ),
                               ),
                       ),
-                      if (provider.imageFile != null)
+                      if (provider.imageFile != null) ...[
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: IconButton.filledTonal(
+                            onPressed: () => provider.clearData(),
+                            icon: const Icon(Icons.close_rounded, size: 20),
+                            tooltip: 'Clear image',
+                            style: IconButton.styleFrom(
+                              backgroundColor: colorScheme.surface.withValues(alpha: 0.88),
+                              foregroundColor: colorScheme.error,
+                            ),
+                          ),
+                        ),
                         Positioned(
                           top: 10,
                           right: 10,
@@ -195,6 +228,7 @@ class ImageTextScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ],
                     ],
                   ),
 
@@ -238,14 +272,14 @@ class ImageTextScreen extends StatelessWidget {
 
                       if (provider.imageFile != null) ...[
                         const SizedBox(width: 10),
-                        // Crop & Focus Button
+                        // Reset Button
                         OutlinedButton.icon(
-                          onPressed: () async {
-                            await provider.cropCurrentImage();
-                          },
-                          icon: const Icon(Icons.crop_rounded),
-                          label: const Text('Crop'),
+                          onPressed: () => provider.clearData(),
+                          icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                          label: const Text('Reset'),
                           style: OutlinedButton.styleFrom(
+                            foregroundColor: colorScheme.error,
+                            side: BorderSide(color: colorScheme.error.withValues(alpha: 0.5)),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),

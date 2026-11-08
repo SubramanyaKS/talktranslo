@@ -3,7 +3,9 @@
 <plist version="1.0">
 <dict>
     <key>NSCameraUsageDescription</key>
-    <string>This app needs camera access</string>
+    <string>TalkTranslo requires camera access to capture documents, signs, and text for instant translation.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>TalkTranslo requires photo library access to select images and extract text for translation.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

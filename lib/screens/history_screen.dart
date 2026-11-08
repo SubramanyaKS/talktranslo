@@ -234,6 +234,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             return Dismissible(
                               key: ValueKey('history_${item.id}'),
                               direction: DismissDirection.endToStart,
+                              confirmDismiss: (direction) async {
+                                return await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Delete Translation'),
+                                    content: Text(
+                                      item.isFavorite
+                                          ? 'This is a starred phrase. Are you sure you want to delete it from history?'
+                                          : 'Are you sure you want to delete this translation from your history?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(ctx).pop(false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      FilledButton(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: colorScheme.error,
+                                        ),
+                                        onPressed: () => Navigator.of(ctx).pop(true),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                               background: Container(
                                 alignment: Alignment.centerRight,
                                 padding: const EdgeInsets.only(right: 20),
@@ -242,10 +268,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   color: colorScheme.error,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: const Icon(
-                                  Icons.delete_outline_rounded,
-                                  color: Colors.white,
-                                  size: 28,
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Delete',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.white,
+                                      size: 26,
+                                    ),
+                                  ],
                                 ),
                               ),
                               onDismissed: (_) {

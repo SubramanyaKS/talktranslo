@@ -28,7 +28,8 @@ final Map<String, String> talklanguageMap = {
   'Bengali':'bn-IN',
   'Chinese (Simplified)':'zh-CN',
   'Chinese (Traditional)':'zh-TW',
-  'English': 'en-US',
+  'English (India)': 'en-IN',
+  'English (US)': 'en-US',
   'French': 'fr-FR',
   'German': 'de-DE',
   'Gujarati':'gu-IN',
@@ -68,13 +69,16 @@ String normalizeVoiceChoice(String? rawVoice) {
 String getTtsLocale(String input) {
   final trimmed = input.trim();
   if (trimmed.isEmpty) return 'en-US';
+  if (trimmed.toLowerCase() == 'english' || trimmed.toLowerCase() == 'en') return 'en-US';
+  if (trimmed.toLowerCase() == 'en-in' || trimmed.toLowerCase() == 'english (india)' || trimmed.toLowerCase() == 'english (in)') return 'en-IN';
+  if (trimmed.toLowerCase() == 'en-us' || trimmed.toLowerCase() == 'english (us)') return 'en-US';
 
-  // 1. Exact match with a language name in talklanguageMap (e.g., 'Kannada' -> 'kn-IN')
+  // 1. Exact match with a language name in talklanguageMap (e.g., 'Kannada' -> 'kn-IN', 'English (India)' -> 'en-IN')
   if (talklanguageMap.containsKey(trimmed)) {
     return talklanguageMap[trimmed]!;
   }
 
-  // 2. Exact match with a value in talklanguageMap (e.g., 'kn-IN')
+  // 2. Exact match with a value in talklanguageMap (e.g., 'kn-IN', 'en-IN', 'en-US')
   if (talklanguageMap.containsValue(trimmed)) {
     return trimmed;
   }
@@ -115,6 +119,8 @@ final Map<String, String> languageToScript = {
   'Chinese (Simplified)': 'chinese',
   'Chinese (Traditional)': 'chinese',
   'English': 'latin',
+  'English (India)': 'latin',
+  'English (US)': 'latin',
   'French': 'latin',
   'German': 'latin',
   'Gujarati': 'devanagari',
@@ -139,6 +145,9 @@ final Map<String, String> languageFlagMap = {
   'Chinese (Simplified)': '🇨🇳',
   'Chinese (Traditional)': '🇹🇼',
   'English': '🇺🇸',
+  'English (India)': '🇮🇳',
+  'English (IN)': '🇮🇳',
+  'English (US)': '🇺🇸',
   'French': '🇫🇷',
   'German': '🇩🇪',
   'Gujarati': '🇮🇳',
@@ -158,12 +167,24 @@ final Map<String, String> languageFlagMap = {
 };
 
 String getLanguageFlag(String languageName) {
+  if (languageFlagMap.containsKey(languageName)) {
+    return languageFlagMap[languageName]!;
+  }
+  if (languageName.contains('India') || languageName.contains('(IN)')) {
+    return '🇮🇳';
+  }
+  if (languageName.contains('US')) {
+    return '🇺🇸';
+  }
   return languageFlagMap[languageName] ?? '🌐';
 }
 
 String getLanguageNameFromValue(Map<String, String> map, String value) {
   for (final entry in map.entries) {
     if (entry.value == value) return entry.key;
+  }
+  for (final entry in map.entries) {
+    if (entry.value.startsWith(value)) return entry.key;
   }
   return value;
 }

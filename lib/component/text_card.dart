@@ -12,6 +12,8 @@ class TextCard extends StatefulWidget {
     this.onClear,
     this.onPaste,
     this.onShare,
+    this.onMicTap,
+    this.isListening = false,
     this.isFavorite = false,
     this.onFavorite,
   });
@@ -24,6 +26,8 @@ class TextCard extends StatefulWidget {
   final VoidCallback? onClear;
   final VoidCallback? onPaste;
   final VoidCallback? onShare;
+  final VoidCallback? onMicTap;
+  final bool isListening;
   final bool isFavorite;
   final VoidCallback? onFavorite;
 
@@ -169,6 +173,22 @@ class _TextCardState extends State<TextCard> {
                 ),
 
                 const Spacer(),
+
+                // Action: Voice Dictation (Only if editable & onMicTap provided)
+                if (widget.editable && widget.onMicTap != null)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
+                    icon: Icon(
+                      widget.isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                      size: 21,
+                      color: widget.isListening
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                    tooltip: widget.isListening ? 'Stop listening' : 'Dictate with voice',
+                    onPressed: widget.onMicTap,
+                  ),
 
                 // Action: Paste (Only if editable)
                 if (widget.editable)
