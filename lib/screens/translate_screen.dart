@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import '../component/text_card.dart';
 import '../provider/translator_provider.dart';
 import 'fullscreen_text_screen.dart';
+import 'phrasebook_screen.dart';
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
@@ -124,6 +125,39 @@ class _TranslateScreenState extends State<TranslateScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // 📖 Quick Travel Phrasebook Access Bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.auto_stories_rounded, size: 16),
+                    label: const Text(
+                      'Travel Phrasebook 📖',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const PhrasebookScreen()),
+                      );
+                    },
+                  ),
+                  Consumer<TranslationProvider>(
+                    builder: (context, provider, _) {
+                      if (provider.translatedController.text.trim().isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return ActionChip(
+                        avatar: const Icon(Icons.fullscreen_rounded, size: 16),
+                        label: const Text('Fullscreen', style: TextStyle(fontSize: 12)),
+                        onPressed: () => _openFullscreen(provider),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
               // 🌍 Language Selector Header Bar
               Consumer<TranslationProvider>(
                 builder: (context, provider, _) {

@@ -5,6 +5,9 @@ import 'package:share_plus/share_plus.dart';
 import '../provider/history_provider.dart';
 import '../provider/translator_provider.dart';
 import '../utils/language.dart';
+import 'phrasebook_screen.dart';
+
+enum HistoryTab { all, saved, phrasebook }
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -103,6 +106,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
+  HistoryTab _currentTab = HistoryTab.all;
 
   @override
   void dispose() {
@@ -157,13 +161,71 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Column(
       children: [
-        // Search & Filter Header
+        // Hub Segmented Selector: All | Saved | Phrasebook
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: SegmentedButton<HistoryTab>(
+                  segments: [
+                    ButtonSegment<HistoryTab>(
+                      value: HistoryTab.all,
+                      label: Text('All (${historyProvider.allItems.length})'),
+                      icon: const Icon(Icons.history_rounded, size: 16),
+                    ),
+                    ButtonSegment<HistoryTab>(
+                      value: HistoryTab.saved,
+                      label: Text('Saved (${historyProvider.favoriteItems.length})'),
+                      icon: const Icon(Icons.star_rounded, size: 16),
+                    ),
+                    const ButtonSegment<HistoryTab>(
+                      value: HistoryTab.phrasebook,
+                      label: Text('Phrasebook 📖'),
+                      icon: Icon(Icons.auto_stories_rounded, size: 16),
+                    ),
+                  ],
+                  selected: {_currentTab},
+                  onSelectionChanged: (Set<HistoryTab> newSelection) {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _currentTab = newSelection.first;
+                      if (_currentTab == HistoryTab.all) {
+                        historyProvider.setShowFavoritesOnly(false);
+                      } else if (_currentTab == HistoryTab.saved) {
+                        historyProvider.setShowFavoritesOnly(true);
+                      }
+                    });
+                  },
+                ),
+              ),
+              if (_currentTab != HistoryTab.phrasebook) ...[
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.share_outlined, size: 20),
+                  tooltip: 'Export / Share translations',
+                  onPressed: displayItems.isEmpty
+                      ? null
+                      : () => HistoryScreen.exportHistory(context, historyProvider),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // If Phrasebook tab is active, show the PhrasebookView
+        if (_currentTab == HistoryTab.phrasebook)
+          const Expanded(
+            child: PhrasebookView(isStandalone: false),
+          )
+        else ...[
+          // Search Field for History & Saved
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search history or phrases...',
+                hintText: 'Search history or saved phrases...',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: historyProvider.searchQuery.isNotEmpty
                     ? IconButton(
@@ -186,45 +248,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ),
 
-          // Filter Segmented Controls: All vs Starred + Quick Export Action
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SegmentedButton<bool>(
-                    segments: [
-                      ButtonSegment<bool>(
-                        value: false,
-                        label: Text('All (${historyProvider.allItems.length})'),
-                        icon: const Icon(Icons.history_rounded, size: 18),
-                      ),
-                      ButtonSegment<bool>(
-                        value: true,
-                        label: Text('Saved (${historyProvider.favoriteItems.length})'),
-                        icon: const Icon(Icons.star_rounded, size: 18),
-                      ),
-                    ],
-                    selected: {historyProvider.showFavoritesOnly},
-                    onSelectionChanged: (Set<bool> newSelection) {
-                      HapticFeedback.selectionClick();
-                      historyProvider.setShowFavoritesOnly(newSelection.first);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.share_outlined, size: 20),
-                  tooltip: 'Export / Share translations',
-                  onPressed: displayItems.isEmpty
-                      ? null
-                      : () => HistoryScreen.exportHistory(context, historyProvider),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
 
           // List View
           Expanded(
@@ -482,6 +506,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
           ),
         ],
-      );
+      ],
+    );
   }
 }
