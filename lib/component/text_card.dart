@@ -17,6 +17,7 @@ class TextCard extends StatefulWidget {
     this.isFavorite = false,
     this.onFavorite,
     this.onFullscreen,
+    this.onSpeakSlow,
   });
 
   final TextEditingController controller;
@@ -32,6 +33,7 @@ class TextCard extends StatefulWidget {
   final bool isFavorite;
   final VoidCallback? onFavorite;
   final VoidCallback? onFullscreen;
+  final VoidCallback? onSpeakSlow;
 
   @override
   State<TextCard> createState() => _TextCardState();
@@ -221,10 +223,28 @@ class _TextCardState extends State<TextCard> {
                   visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.all(6),
                   icon: const Icon(Icons.volume_up_rounded, size: 20),
-                  tooltip: 'Listen pronunciation',
+                  tooltip: widget.onSpeakSlow != null
+                      ? 'Listen pronunciation'
+                      : 'Listen pronunciation',
                   color: hasText ? colorScheme.primary : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   onPressed: hasText ? widget.onSpeak : null,
                 ),
+
+                // Action: Slow Pronunciation Mode (🐢 0.6x)
+                if (widget.onSpeakSlow != null)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
+                    icon: const Text('🐢', style: TextStyle(fontSize: 16)),
+                    tooltip: 'Slow pronunciation (0.6x)',
+                    color: hasText ? colorScheme.primary : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    onPressed: hasText
+                        ? () {
+                            HapticFeedback.lightImpact();
+                            widget.onSpeakSlow!();
+                          }
+                        : null,
+                  ),
 
                 // Action: Copy
                 IconButton(

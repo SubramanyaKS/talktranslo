@@ -7,6 +7,7 @@ import 'package:talktranslo/component/custom_dropdown.dart';
 import 'package:flutter/services.dart';
 
 import '../component/text_card.dart';
+import '../data/phrasebook_data.dart';
 import '../provider/translator_provider.dart';
 import 'fullscreen_text_screen.dart';
 import 'phrasebook_screen.dart';
@@ -21,6 +22,44 @@ class TranslateScreen extends StatefulWidget {
 class _TranslateScreenState extends State<TranslateScreen> {
   double _swapTurns = 0.0;
   bool _isTranslating = false;
+  String? _clipboardText;
+  String? _dismissedClipboardText;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkClipboard();
+  }
+
+  Future<void> _checkClipboard() async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text?.trim();
+      if (text != null &&
+          text.isNotEmpty &&
+          text.length >= 2 &&
+          text.length <= 400 &&
+          text != _dismissedClipboardText &&
+          mounted) {
+        final provider = Provider.of<TranslationProvider>(context, listen: false);
+        if (text != provider.inputController.text.trim()) {
+          setState(() {
+            _clipboardText = text;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _applyClipboardText(TranslationProvider provider, String text) {
+    HapticFeedback.lightImpact();
+    provider.inputController.text = text;
+    setState(() {
+      _dismissedClipboardText = text;
+      _clipboardText = null;
+    });
+    _handleTranslate(provider);
+  }
 
   void _copyContent(String text, {String message = 'Copied to clipboard'}) async {
     if (text.trim().isEmpty) return;
@@ -88,8 +127,22 @@ class _TranslateScreenState extends State<TranslateScreen> {
       );
       return;
     }
+
+    final targetLang = provider.translationLanguage;
+
+    // Check offline phrasebook matches for immediate offline fallback
+    PhraseItem? offlineMatch;
+    for (final item in PhrasebookData.phrases) {
+      if (item.text.trim().toLowerCase() == text.toLowerCase() &&
+          item.offlineTranslations.containsKey(targetLang)) {
+        offlineMatch = item;
+        break;
+      }
+    }
+
     setState(() => _isTranslating = true);
     final success = await provider.translateText();
+
     if (mounted) {
       setState(() => _isTranslating = false);
       if (success) {
@@ -100,13 +153,52 @@ class _TranslateScreenState extends State<TranslateScreen> {
           sourceLang: provider.selectedLanguage,
           targetLang: provider.translationLanguage,
         );
+      } else if (offlineMatch != null) {
+        // Successful offline fallback!
+        final offlineTranslation = offlineMatch.offlineTranslations[targetLang]!;
+        provider.translatedController.text = offlineTranslation;
+        provider.translationError = null;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Translated instantly using Offline Phrasebook! 📶'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        Provider.of<HistoryProvider>(context, listen: false).addTranslation(
+          sourceText: text,
+          translatedText: offlineTranslation,
+          sourceLang: provider.selectedLanguage,
+          targetLang: targetLang,
+        );
       } else if (provider.translationError != null) {
+        // Graceful offline banner with direct action to open Offline Phrasebook
+        final isNetworkErr = provider.translationError!.toLowerCase().contains('client') ||
+            provider.translationError!.toLowerCase().contains('socket') ||
+            provider.translationError!.toLowerCase().contains('network') ||
+            provider.translationError!.toLowerCase().contains('failed');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(provider.translationError!),
+            content: Text(
+              isNetworkErr
+                  ? "Offline: Couldn't connect to translation server"
+                  : provider.translationError!,
+            ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Phrasebook 📖',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PhrasebookScreen()),
+                );
+              },
+            ),
           ),
         );
       }
@@ -228,6 +320,76 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
               const SizedBox(height: 16),
 
+              // 📋 Clipboard Quick-Translate Banner
+              Consumer<TranslationProvider>(
+                builder: (context, provider, _) {
+                  if (_clipboardText == null || provider.inputController.text.trim().isNotEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.content_paste_rounded, size: 18, color: colorScheme.primary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => _applyClipboardText(provider, _clipboardText!),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Translate copied text',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                                Text(
+                                  _clipboardText!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        FilledButton.tonal(
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: () => _applyClipboardText(provider, _clipboardText!),
+                          child: const Text('Translate', style: TextStyle(fontSize: 12)),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 16),
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'Dismiss',
+                          onPressed: () => setState(() {
+                            _dismissedClipboardText = _clipboardText;
+                            _clipboardText = null;
+                          }),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
               // 📝 Input Card
               Consumer<TranslationProvider>(
                 builder: (context, provider, _) {
@@ -239,6 +401,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                     onMicTap: provider.toggleListening,
                     onCopy: () => _copyContent(provider.inputController.text),
                     onSpeak: provider.speakInputText,
+                    onSpeakSlow: () => provider.speakInputText(isSlow: true),
                     onClear: () {
                       provider.inputController.clear();
                       provider.translatedController.clear();
@@ -319,6 +482,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                     },
                     onCopy: () => _copyContent(provider.translatedController.text),
                     onSpeak: provider.speakTranslatedText,
+                    onSpeakSlow: () => provider.speakTranslatedText(isSlow: true),
                     onShare: () => _handleShare(
                       provider.inputController.text,
                       provider.translatedController.text,
