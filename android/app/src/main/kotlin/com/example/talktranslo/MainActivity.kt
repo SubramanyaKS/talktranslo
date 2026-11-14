@@ -1,5 +1,2 @@
-package com.example.talktranslo
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity: FlutterActivity()
+// Migrated to com.talktranslo.app.MainActivity
+package com.talktranslo.app

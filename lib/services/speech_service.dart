@@ -178,8 +178,9 @@ class SpeechService {
     String language,
     double pitch,
     double speechRate,
-    String selectedVoice,
-  ) async {
+    String selectedVoice, {
+    bool isSlow = false,
+  }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
 
@@ -214,6 +215,11 @@ class SpeechService {
           effectivePitch = pitch.clamp(0.5, 2.0);
           effectiveRate = speechRate.clamp(0.5, 2.0);
           break;
+      }
+
+      // If slow pronunciation mode is requested (e.g. for language learners)
+      if (isSlow) {
+        effectiveRate = 0.52;
       }
 
       await _flutterTts.setPitch(effectivePitch);

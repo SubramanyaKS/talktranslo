@@ -230,7 +230,7 @@ class TranslationProvider with ChangeNotifier {
     }
   }
 
-  Future<void> speakTranslatedText() async {
+  Future<void> speakTranslatedText({bool isSlow = false}) async {
     if (translatedController.text.trim().isEmpty) return;
     await _speechService.speakText(
       translatedController.text,
@@ -238,10 +238,11 @@ class TranslationProvider with ChangeNotifier {
       pitch,
       speechRate,
       selectedVoice,
+      isSlow: isSlow,
     );
   }
 
-  Future<void> speakSpeechTranslatedText() async {
+  Future<void> speakSpeechTranslatedText({bool isSlow = false}) async {
     if (translated.trim().isEmpty) return;
     await _speechService.speakText(
       translated,
@@ -249,10 +250,11 @@ class TranslationProvider with ChangeNotifier {
       pitch,
       speechRate,
       selectedVoice,
+      isSlow: isSlow,
     );
   }
 
-  Future<void> speakInputText() async {
+  Future<void> speakInputText({bool isSlow = false}) async {
     if (inputController.text.trim().isEmpty) return;
     await _speechService.speakText(
       inputController.text,
@@ -260,6 +262,7 @@ class TranslationProvider with ChangeNotifier {
       pitch,
       speechRate,
       selectedVoice,
+      isSlow: isSlow,
     );
   }
 
