@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +17,12 @@ void main() async {
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('Flutter Error: ${details.exceptionAsString()}');
+  };
+
+  // Global uncaught platform asynchronous error handler
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught Platform Async Error: $error');
+    return true; // Prevents crash
   };
 
   final prefs = await SharedPreferences.getInstance();
