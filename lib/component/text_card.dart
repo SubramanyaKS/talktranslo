@@ -18,6 +18,7 @@ class TextCard extends StatefulWidget {
     this.onFavorite,
     this.onFullscreen,
     this.onSpeakSlow,
+    this.subtitle,
   });
 
   final TextEditingController controller;
@@ -34,6 +35,7 @@ class TextCard extends StatefulWidget {
   final VoidCallback? onFavorite;
   final VoidCallback? onFullscreen;
   final VoidCallback? onSpeakSlow;
+  final String? subtitle;
 
   @override
   State<TextCard> createState() => _TextCardState();
@@ -140,20 +142,39 @@ class _TextCardState extends State<TextCard> {
                 : Container(
                     constraints: const BoxConstraints(minHeight: 90),
                     alignment: Alignment.topLeft,
-                    child: SelectableText(
-                      widget.controller.text.isEmpty
-                          ? widget.hint
-                          : widget.controller.text,
-                      style: TextStyle(
-                        fontSize: 17,
-                        height: 1.45,
-                        color: widget.controller.text.isEmpty
-                            ? theme.hintColor.withValues(alpha: 0.7)
-                            : colorScheme.onSurface,
-                        fontStyle: widget.controller.text.isEmpty
-                            ? FontStyle.italic
-                            : FontStyle.normal,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SelectableText(
+                          widget.controller.text.isEmpty
+                              ? widget.hint
+                              : widget.controller.text,
+                          style: TextStyle(
+                            fontSize: 17,
+                            height: 1.45,
+                            color: widget.controller.text.isEmpty
+                                ? theme.hintColor.withValues(alpha: 0.7)
+                                : colorScheme.onSurface,
+                            fontStyle: widget.controller.text.isEmpty
+                                ? FontStyle.italic
+                                : FontStyle.normal,
+                          ),
+                        ),
+                        if (widget.subtitle != null &&
+                            widget.subtitle!.trim().isNotEmpty &&
+                            widget.controller.text.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          SelectableText(
+                            widget.subtitle!,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              height: 1.35,
+                              fontStyle: FontStyle.italic,
+                              color: colorScheme.primary.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
           ),

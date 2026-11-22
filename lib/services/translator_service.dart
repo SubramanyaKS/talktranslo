@@ -3,14 +3,19 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:translator/translator.dart';
+import 'offline_translation_service.dart';
 
 class TranslationResult {
   final String text;
   final String? detectedSourceLanguage;
+  final String? transliteration;
+  final bool isOffline;
 
   const TranslationResult({
     required this.text,
     this.detectedSourceLanguage,
+    this.transliteration,
+    this.isOffline = false,
   });
 }
 
@@ -38,6 +43,8 @@ class TranslationService {
     String text,
     String targetLanguage, {
     String sourceLanguage = 'auto',
+    bool allowOfflineFallback = true,
+    bool preferOffline = false,
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return const TranslationResult(text: "");
@@ -47,7 +54,61 @@ class TranslationService {
         ? 'auto'
         : normalizeLanguageCode(sourceLanguage);
 
-    // Tier 1: Try package:translator
+    // Optional Offline-First Mode (if user enabled "Prefer Offline Mode" and models are downloaded)
+    if (preferOffline) {
+      final offlineResult = await OfflineTranslationService.instance.translateOffline(
+        trimmed,
+        sourceLanguage: sourceCode,
+        targetLanguage: targetCode,
+      );
+      if (offlineResult != null && offlineResult.isNotEmpty) {
+        return TranslationResult(text: offlineResult, isOffline: true);
+      }
+    }
+
+    // Tier 1: Direct HTTP request to Google Translate GTX endpoint (includes romanization via dt=rm)
+    try {
+      final url = Uri.parse(
+        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceCode&tl=$targetCode&dt=t&dt=rm&q=${Uri.encodeComponent(trimmed)}',
+      );
+      final response = await http.get(url).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final dynamic data = jsonDecode(response.body);
+        if (data is List && data.isNotEmpty && data[0] is List) {
+          final buffer = StringBuffer();
+          final translitBuffer = StringBuffer();
+          for (final item in data[0]) {
+            if (item is List && item.isNotEmpty) {
+              if (item[0] != null) {
+                buffer.write(item[0]);
+              } else if (item.length > 2 && item[2] is String) {
+                translitBuffer.write(item[2]);
+              }
+            }
+          }
+          final result = buffer.toString().trim();
+          if (result.isNotEmpty) {
+            final detected = (sourceCode == 'auto' && data.length > 2 && data[2] is String)
+                ? data[2] as String
+                : null;
+            final rawTranslit = translitBuffer.toString().trim();
+            final translit = (rawTranslit.isNotEmpty &&
+                    rawTranslit.toLowerCase() != result.toLowerCase())
+                ? rawTranslit
+                : null;
+            return TranslationResult(
+              text: result,
+              detectedSourceLanguage: detected,
+              transliteration: translit,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Tier 1 (GTX endpoint) failed: $e. Trying Tier 2 fallback...');
+    }
+
+    // Tier 2: Try package:translator
     try {
       final translation = await _translator
           .translate(trimmed, from: sourceCode, to: targetCode)
@@ -64,38 +125,7 @@ class TranslationService {
         );
       }
     } catch (e) {
-      debugPrint('Tier 1 (translator package) failed: $e. Trying Tier 2 fallback...');
-    }
-
-    // Tier 2: Direct HTTP request to Google Translate GTX endpoint
-    try {
-      final url = Uri.parse(
-        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceCode&tl=$targetCode&dt=t&q=${Uri.encodeComponent(trimmed)}',
-      );
-      final response = await http.get(url).timeout(const Duration(seconds: 8));
-      if (response.statusCode == 200) {
-        final dynamic data = jsonDecode(response.body);
-        if (data is List && data.isNotEmpty && data[0] is List) {
-          final buffer = StringBuffer();
-          for (final item in data[0]) {
-            if (item is List && item.isNotEmpty && item[0] != null) {
-              buffer.write(item[0]);
-            }
-          }
-          final result = buffer.toString().trim();
-          if (result.isNotEmpty) {
-            final detected = (sourceCode == 'auto' && data.length > 2 && data[2] is String)
-                ? data[2] as String
-                : null;
-            return TranslationResult(
-              text: result,
-              detectedSourceLanguage: detected,
-            );
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Tier 2 (GTX endpoint) failed: $e. Trying Tier 3 fallback...');
+      debugPrint('Tier 2 (translator package) failed: $e. Trying Tier 3 fallback...');
     }
 
     // Tier 3: Direct HTTP request to Google Translate Chrome extension endpoint
@@ -132,8 +162,20 @@ class TranslationService {
       debugPrint('Tier 3 (Chrome extension endpoint) failed: $e');
     }
 
+    // Tier 4: Automatic On-Device Offline Fallback (only uses already-downloaded ML Kit models)
+    if (allowOfflineFallback && !preferOffline) {
+      final offlineResult = await OfflineTranslationService.instance.translateOffline(
+        trimmed,
+        sourceLanguage: sourceCode,
+        targetLanguage: targetCode,
+      );
+      if (offlineResult != null && offlineResult.isNotEmpty) {
+        return TranslationResult(text: offlineResult, isOffline: true);
+      }
+    }
+
     throw Exception(
-      'Unable to translate. Please check your internet connection and try again.',
+      'Unable to translate. Check your internet connection or download Offline Language Packs in Settings.',
     );
   }
 }

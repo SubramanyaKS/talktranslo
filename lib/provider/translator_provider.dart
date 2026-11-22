@@ -16,10 +16,17 @@ class TranslationProvider with ChangeNotifier {
   static const String _keySpeechRate = 'pref_speech_rate';
   static const String _keyPitch = 'pref_pitch';
   static const String _keySelectedVoice = 'pref_selected_voice';
+  static const String _keyAutoTranslate = 'pref_auto_translate';
+  static const String _keyOfflineFallback = 'pref_offline_fallback';
+  static const String _keyPreferOffline = 'pref_prefer_offline';
 
   TextEditingController inputController = TextEditingController();
   TextEditingController translatedController = TextEditingController();
   bool isListening = false;
+  bool autoTranslate = false;
+  bool offlineFallbackEnabled = true;
+  bool preferOfflineMode = false;
+  bool lastTranslationWasOffline = false;
   String selectedLanguage = 'en-US';
   String translationLanguage = "kn"; // Default to Kannada
   String generated = '';
@@ -31,6 +38,7 @@ class TranslationProvider with ChangeNotifier {
   String? translationError;
   String? speechError;
   String? detectedSourceLanguage;
+  String? translatedTransliteration;
 
   /// Safe locale for Conversation Mode (Speaker A), which never returns 'auto'.
   String get speakerALanguage {
@@ -58,6 +66,9 @@ class TranslationProvider with ChangeNotifier {
       final savedRate = prefs.getDouble(_keySpeechRate);
       final savedPitch = prefs.getDouble(_keyPitch);
       final savedVoice = prefs.getString(_keySelectedVoice);
+      final savedAutoTranslate = prefs.getBool(_keyAutoTranslate);
+      final savedOfflineFallback = prefs.getBool(_keyOfflineFallback);
+      final savedPreferOffline = prefs.getBool(_keyPreferOffline);
 
       if (savedSource != null && (translateSourceLanguageMap.containsValue(savedSource) || savedSource == 'auto')) {
         selectedLanguage = savedSource;
@@ -73,6 +84,15 @@ class TranslationProvider with ChangeNotifier {
       }
       if (savedVoice != null && savedVoice.isNotEmpty) {
         selectedVoice = normalizeVoiceChoice(savedVoice);
+      }
+      if (savedAutoTranslate != null) {
+        autoTranslate = savedAutoTranslate;
+      }
+      if (savedOfflineFallback != null) {
+        offlineFallbackEnabled = savedOfflineFallback;
+      }
+      if (savedPreferOffline != null) {
+        preferOfflineMode = savedPreferOffline;
       }
       notifyListeners();
     } catch (e) {
@@ -161,8 +181,42 @@ class TranslationProvider with ChangeNotifier {
     }
   }
 
+  Future<void> setAutoTranslate(bool enabled) async {
+    autoTranslate = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyAutoTranslate, autoTranslate);
+    } catch (e) {
+      debugPrint('Error saving auto-translate preference: $e');
+    }
+  }
+
+  Future<void> setOfflineFallbackEnabled(bool enabled) async {
+    offlineFallbackEnabled = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyOfflineFallback, offlineFallbackEnabled);
+    } catch (e) {
+      debugPrint('Error saving offline fallback preference: $e');
+    }
+  }
+
+  Future<void> setPreferOfflineMode(bool enabled) async {
+    preferOfflineMode = enabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyPreferOffline, preferOfflineMode);
+    } catch (e) {
+      debugPrint('Error saving prefer offline preference: $e');
+    }
+  }
+
   Future<void> translateLanguage(dynamic language) async {
     translationLanguage = language.toString();
+    translatedTransliteration = null;
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -199,6 +253,7 @@ class TranslationProvider with ChangeNotifier {
     }
 
     detectedSourceLanguage = null;
+    translatedTransliteration = null;
 
     final prevInput = inputController.text;
     final prevTranslated = translatedController.text;
@@ -227,8 +282,12 @@ class TranslationProvider with ChangeNotifier {
         text,
         translationLanguage,
         sourceLanguage: selectedLanguage,
+        allowOfflineFallback: offlineFallbackEnabled,
+        preferOffline: preferOfflineMode,
       );
       translatedController.text = result.text;
+      translatedTransliteration = result.transliteration;
+      lastTranslationWasOffline = result.isOffline;
       if (selectedLanguage == 'auto') {
         detectedSourceLanguage = result.detectedSourceLanguage;
       } else {
@@ -424,10 +483,14 @@ class TranslationProvider with ChangeNotifier {
     try {
       isTranslatingSpeech = true;
       notifyListeners();
-      final res = await _translationService.translateText(
+      final result = await _translationService.translateWithDetails(
         speakerASpeech,
         translationLanguage,
+        sourceLanguage: speakerALanguage,
+        allowOfflineFallback: offlineFallbackEnabled,
+        preferOffline: preferOfflineMode,
       );
+      final res = result.text;
       speakerATranslation = res;
       translated = res;
       isTranslatingSpeech = false;
@@ -534,10 +597,14 @@ class TranslationProvider with ChangeNotifier {
       notifyListeners();
       final sourceLangName = getLanguageNameFromValue(talklanguageMap, speakerALanguage);
       final targetCode = languageMap[sourceLangName] ?? 'en';
-      final res = await _translationService.translateText(
+      final result = await _translationService.translateWithDetails(
         speakerBSpeech,
         targetCode,
+        sourceLanguage: translationLanguage,
+        allowOfflineFallback: offlineFallbackEnabled,
+        preferOffline: preferOfflineMode,
       );
+      final res = result.text;
       speakerBTranslation = res;
       isTranslatingSpeech = false;
       notifyListeners();

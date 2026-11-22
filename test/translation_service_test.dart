@@ -22,11 +22,13 @@ void main() {
   group('TranslationService Live Tests', () {
     final service = TranslationService();
 
-    test('Translates English to Kannada', () async {
-      final result = await service.translateText('Hello, how are you?', 'kn');
-      expect(result, isNotEmpty);
+    test('Translates English to Kannada with romanization', () async {
+      final result = await service.translateWithDetails('Hello, how are you?', 'kn');
+      expect(result.text, isNotEmpty);
+      expect(result.transliteration, isNotNull);
+      expect(result.transliteration, isNotEmpty);
       // ignore: avoid_print
-      print('English -> Kannada: "Hello, how are you?" -> "$result"');
+      print('English -> Kannada: "${result.text}" (${result.transliteration})');
     });
 
     test('Translates English to Spanish', () async {
@@ -138,12 +140,16 @@ void main() {
   });
 
   group('ImageTextProvider State Tests', () {
-    test('clearData resets scannedText, translatedText, imageFile, and textScanning', () {
+    test('updateScannedText updates extracted text and clearData resets everything', () {
       final provider = ImageTextProvider();
+      provider.updateScannedText('Edited OCR text');
+      expect(provider.scannedText, equals('Edited OCR text'));
+
       provider.clearData();
 
       expect(provider.scannedText, isEmpty);
       expect(provider.translatedText, isEmpty);
+      expect(provider.translatedTransliteration, isNull);
       expect(provider.imageFile, isNull);
       expect(provider.textScanning, isFalse);
     });

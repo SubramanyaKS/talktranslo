@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -10,6 +11,7 @@ import '../component/text_card.dart';
 import '../data/phrasebook_data.dart';
 import '../provider/translator_provider.dart';
 import 'fullscreen_text_screen.dart';
+import 'offline_languages_screen.dart';
 import 'phrasebook_screen.dart';
 
 class TranslateScreen extends StatefulWidget {
@@ -24,6 +26,9 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
   bool _isTranslating = false;
   String? _clipboardText;
   String? _dismissedClipboardText;
+  Timer? _debounceTimer;
+  String _lastAutoTranslatedInput = '';
+  TranslationProvider? _providerRef;
 
   @override
   void initState() {
@@ -33,9 +38,44 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = Provider.of<TranslationProvider>(context, listen: false);
+    if (_providerRef != provider) {
+      _providerRef?.inputController.removeListener(_onInputChanged);
+      _providerRef = provider;
+      _providerRef!.inputController.addListener(_onInputChanged);
+    }
+  }
+
+  @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _providerRef?.inputController.removeListener(_onInputChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _onInputChanged() {
+    final provider = _providerRef;
+    if (provider == null || !provider.autoTranslate || !mounted) return;
+    final currentText = provider.inputController.text.trim();
+    if (currentText.isEmpty) {
+      _debounceTimer?.cancel();
+      _lastAutoTranslatedInput = '';
+      return;
+    }
+    if (currentText == _lastAutoTranslatedInput) return;
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 650), () {
+      if (!mounted || !provider.autoTranslate || _isTranslating) return;
+      final latest = provider.inputController.text.trim();
+      if (latest.isNotEmpty && latest != _lastAutoTranslatedInput) {
+        _lastAutoTranslatedInput = latest;
+        _handleTranslate(provider, isAuto: true);
+      }
+    });
   }
 
   @override
@@ -105,6 +145,7 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
           translatedText: provider.translatedController.text,
           targetLanguage: provider.translationLanguage,
           sourceText: provider.inputController.text,
+          transliteration: provider.translatedTransliteration,
           onSpeak: provider.speakTranslatedText,
         ),
       ),
@@ -129,19 +170,23 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
     provider.swapLanguages();
   }
 
-  Future<void> _handleTranslate(TranslationProvider provider) async {
-    HapticFeedback.lightImpact();
+  Future<void> _handleTranslate(TranslationProvider provider, {bool isAuto = false}) async {
+    _debounceTimer?.cancel();
+    if (!isAuto) HapticFeedback.lightImpact();
     final text = provider.inputController.text.trim();
     if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter some text to translate'),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (!isAuto) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter some text to translate'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
       return;
     }
+    _lastAutoTranslatedInput = text;
 
     final targetLang = provider.translationLanguage;
 
@@ -211,11 +256,15 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
             backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
-              label: 'Phrasebook 📖',
+              label: isNetworkErr ? 'Offline Packs' : 'Phrasebook 📖',
               textColor: Colors.white,
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const PhrasebookScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => isNetworkErr
+                        ? const OfflineLanguagesScreen()
+                        : const PhrasebookScreen(),
+                  ),
                 );
               },
             ),
@@ -237,14 +286,13 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 📖 Quick Travel Phrasebook Access Bar
+              // 📖 Quick Travel Phrasebook & Instant Translate Bar
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   ActionChip(
                     avatar: const Icon(Icons.auto_stories_rounded, size: 16),
                     label: const Text(
-                      'Travel Phrasebook 📖',
+                      'Phrasebook 📖',
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                     onPressed: () {
@@ -254,6 +302,32 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
                       );
                     },
                   ),
+                  const SizedBox(width: 8),
+                  Consumer<TranslationProvider>(
+                    builder: (context, provider, _) {
+                      return FilterChip(
+                        avatar: Icon(
+                          Icons.bolt_rounded,
+                          size: 16,
+                          color: provider.autoTranslate
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        label: const Text(
+                          'Instant',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        selected: provider.autoTranslate,
+                        showCheckmark: false,
+                        tooltip: 'Auto-translate as you type',
+                        onSelected: (val) {
+                          HapticFeedback.selectionClick();
+                          provider.setAutoTranslate(val);
+                        },
+                      );
+                    },
+                  ),
+                  const Spacer(),
                   Consumer<TranslationProvider>(
                     builder: (context, provider, _) {
                       if (provider.translatedController.text.trim().isEmpty) {
@@ -454,9 +528,13 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
                         onSpeak: provider.speakInputText,
                         onSpeakSlow: () => provider.speakInputText(isSlow: true),
                         onClear: () {
+                          _debounceTimer?.cancel();
+                          _lastAutoTranslatedInput = '';
                           provider.inputController.clear();
                           provider.translatedController.clear();
                           provider.detectedSourceLanguage = null;
+                          provider.translatedTransliteration = null;
+                          provider.lastTranslationWasOffline = false;
                           setState(() {});
                         },
                       ),
@@ -517,31 +595,63 @@ class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingOb
 
                   final isFavorite = matchingHistory.isNotEmpty && matchingHistory.first.isFavorite;
 
-                  return TextCard(
-                    controller: provider.translatedController,
-                    hint: "Translation will appear here...",
-                    editable: false,
-                    isFavorite: isFavorite,
-                    onFavorite: () {
-                      if (matchingHistory.isNotEmpty) {
-                        histProvider.toggleFavorite(matchingHistory.first);
-                      } else if (sourceText.isNotEmpty && translatedText.isNotEmpty) {
-                        histProvider.addTranslation(
-                          sourceText: sourceText,
-                          translatedText: translatedText,
-                          sourceLang: provider.selectedLanguage,
-                          targetLang: provider.translationLanguage,
-                        );
-                      }
-                    },
-                    onCopy: () => _copyContent(provider.translatedController.text),
-                    onSpeak: provider.speakTranslatedText,
-                    onSpeakSlow: () => provider.speakTranslatedText(isSlow: true),
-                    onShare: () => _handleShare(
-                      provider.inputController.text,
-                      provider.translatedController.text,
-                    ),
-                    onFullscreen: () => _openFullscreen(provider),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (provider.lastTranslationWasOffline && translatedText.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8, left: 4),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.secondaryContainer.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.offline_bolt_rounded, size: 14, color: colorScheme.secondary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Translated Offline (On-Device)',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.secondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      TextCard(
+                        controller: provider.translatedController,
+                        hint: "Translation will appear here...",
+                        subtitle: provider.translatedTransliteration,
+                        editable: false,
+                        isFavorite: isFavorite,
+                        onFavorite: () {
+                          if (matchingHistory.isNotEmpty) {
+                            histProvider.toggleFavorite(matchingHistory.first);
+                          } else if (sourceText.isNotEmpty && translatedText.isNotEmpty) {
+                            histProvider.addTranslation(
+                              sourceText: sourceText,
+                              translatedText: translatedText,
+                              sourceLang: provider.selectedLanguage,
+                              targetLang: provider.translationLanguage,
+                            );
+                          }
+                        },
+                        onCopy: () => _copyContent(provider.translatedController.text),
+                        onSpeak: provider.speakTranslatedText,
+                        onSpeakSlow: () => provider.speakTranslatedText(isSlow: true),
+                        onShare: () => _handleShare(
+                          provider.inputController.text,
+                          provider.translatedController.text,
+                        ),
+                        onFullscreen: () => _openFullscreen(provider),
+                      ),
+                    ],
                   );
                 },
               ),

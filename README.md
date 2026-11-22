@@ -1,6 +1,6 @@
 # 📢 TalkTranslo - Multi-Language Translator & Voice Conversation App
 
-**TalkTranslo** is a modern, production-grade Flutter translation application designed for seamless multilingual communication. It features real-time text translation with a 3-tier resilient fallback engine, **Auto-Detect Language ("Auto Detect ✨")**, tabletop **Face-to-Face (180° Inverted)** conversation mode, an offline **Travel & Survival Phrasebook**, optical character recognition (OCR) via Google ML Kit, **Fullscreen Traveler Mode**, **Clipboard Quick-Translate**, **Slow Pronunciation Mode (🐢 0.6x)**, multilingual text-to-speech, tactile haptic feedback, full Material 3 dynamic theming, and persistent SQLite database history.
+**TalkTranslo** is a modern, production-grade Flutter translation application designed for seamless multilingual communication. It features real-time text translation with a **4-tier resilient engine** (including **True On-Device Offline Translation** via Google ML Kit), **Pronunciation / Romanization Guides**, **Instant Debounced Auto-Translate**, **Auto-Detect Language ("Auto Detect ✨")**, tabletop **Face-to-Face (180° Inverted)** conversation mode, an offline **Travel & Survival Phrasebook**, **Editable Camera OCR** via Google ML Kit, **Fullscreen Traveler Mode**, **Clipboard Quick-Translate**, **Slow Pronunciation Mode (🐢 0.6x)**, tactile haptic feedback, **System / Light / Dark Material 3 theming**, and persistent SQLite database history.
 
 <div align="center">
 
@@ -8,7 +8,7 @@
 ![Dart](https://img.shields.io/badge/Dart-3.6+-00B4AB?logo=dart)
 ![Material 3](https://img.shields.io/badge/Material--3-Enabled-7C3AED)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Tests](https://img.shields.io/badge/Tests-26%20Passing-success)
+![Tests](https://img.shields.io/badge/Tests-33%20Passing-success)
 ![Platform](https://img.shields.io/badge/Platform-Android%20|%20iOS-brightgreen)
 
 </div>
@@ -18,17 +18,24 @@
 ## 🚀 Key Features
 
 ### **📝 Modern Text Translation**
-- **20+ Supported Languages:** Indian languages (Kannada, Hindi, Tamil, Telugu, Malayalam, Bengali, Gujarati, Marathi, etc.) and global languages (English [US & IN], Spanish, French, German, Japanese, Chinese, Russian, Arabic, etc.).
-- **Auto-Detect Source Language ("Auto Detect ✨"):** Automatically recognizes the input language across all translation endpoints without manual configuration.
-- **3-Tier Resilient Engine:** Automatic failover across primary and fallback Google translation APIs (GTX single and Chrome Dict endpoints) with locale normalization.
-- **Clipboard Quick-Translate Banner:** Automatically detects copied text from other apps (WhatsApp, Chrome, Mail) and provides a one-tap translate pill.
-- **Offline Survival Fallback:** If internet is unavailable, typed text automatically matches against the offline survival dictionary for instant zero-latency translation.
+- **22+ Supported Languages:** Indian languages (Kannada, Hindi, Tamil, Telugu, Malayalam, Bengali, Gujarati, Assamese, Konkani, Sanskrit) and global languages (English [US & IN], Spanish, French, German, Japanese, Korean, Chinese [Simplified & Traditional], Russian, Arabic, Hebrew, Thai).
+- **Auto-Detect Source Language ("Auto Detect ✨"):** Automatically identifies the input language, displays a `✨ Detected: <Language>` badge, routes input TTS to the detected locale, and unlocks one-tap language swapping.
+- **Pronunciation / Romanization Guide:** Displays phonetic romanization (e.g., `ಹಲೋ, ಹೇಗಿದ್ದೀಯಾ?` → *`Halō, hēgiddīyā?`*) underneath non-Latin translations across Text Translate, Fullscreen Traveler Mode, and Camera OCR.
+- **Instant Debounced Auto-Translate (`Instant ⚡`):** Optional toggle that translates automatically ~650ms after you stop typing.
+- **4-Tier Resilient Engine + True Offline Mode:** Automatic failover across Google GTX (`&dt=rm`), `translator`, Chrome Dict, and **On-Device ML Kit Offline Translation** (`google_mlkit_translation`).
+- **Clipboard Quick-Translate Banner:** Detects copied text from other apps on launch and app resume (`WidgetsBindingObserver`) with a one-tap translate pill.
 - **Slow Pronunciation Mode (🐢 0.6x):** Dedicated turtle speed button on translation cards for language learners and travelers to hear difficult words enunciated slowly.
-- **Interactive Language Picker:** Search modal bottom sheet displaying national flags with instant search filtering.
-- **Animated Language Swap:** Smooth 180° rotation that swaps active source/target languages and input/output text simultaneously (with auto-detect swap protection).
-- **Fullscreen Traveler Mode:** Giant bold, dynamically scaling text screen designed for showing taxi drivers, store clerks, or passersby across counters.
+- **Interactive Language Picker & Animated Swap:** Search modal bottom sheet with national flags and smooth 180° language swap animation.
+- **Fullscreen Traveler Mode:** Giant bold, dynamically scaling text (with optional romanization) designed for showing taxi drivers, store clerks, or passersby across counters.
 - **Bottom Action Toolbar:** Quick buttons for **Voice Dictation (Mic)**, **Copy**, **Clear (✕)**, **Paste from Clipboard**, **Speak (TTS)**, **Slow Speak (🐢)**, **Fullscreen**, and **Share**.
-- **Tactile Haptic Feedback:** Light and selection clicks on mic taps, language swaps, copy, clear, and favorite toggles.
+
+### **📶 True On-Device Offline Translation (User-Controlled)**
+- **On-Demand Language Pack Manager (`OfflineLanguagesScreen`):** Download or remove ~30 MB Google ML Kit on-device packs for 17 supported languages without bloating the base APK.
+- **3 User-Controlled Preferences:**
+  - **Auto Offline Fallback** (default ON): Automatically translates custom sentences, voice, and OCR text locally when internet is unavailable.
+  - **Prefer Offline Mode** (default OFF): Runs translations on-device first whenever packs are downloaded to save mobile data.
+  - **Download Over Wi-Fi Only** (default ON): Prevents cellular data usage during language pack downloads.
+- **Clear Offline Indicator:** Displays a `Translated Offline (On-Device)` badge whenever a translation ran locally, plus transparent labeling of online-only languages (Assamese, Konkani, Malayalam, Sanskrit).
 
 ### **🎙️ Dual Split-Screen Voice Conversation Mode**
 - **Two-Way Spoken Conversation:** Dedicated cards for Speaker 1 and Speaker 2 for natural face-to-face dialogue.
@@ -50,22 +57,23 @@
 ### **📸 Camera & Gallery Image OCR Translation**
 - **Optical Character Recognition (OCR):** Powered by on-device Google ML Kit.
 - **Integrated Image Cropper:** Built-in cropping, rotating, and aspect ratio tool (`image_cropper`) allowing users to isolate specific text areas, signs, or document sections before recognition.
+- **Editable Extracted Text:** Edit OCR typos directly in the extracted text field before translating.
 - **Multi-Script Support:** Latin, Devanagari (Hindi, Kannada, etc.), Chinese (Simplified & Traditional), Japanese, and Korean.
-- **Instant Recognition:** Image capture via Camera or Gallery automatically triggers text detection and translation.
-- **Auto-Saved to History:** Scanned text translations automatically persist into the SQLite database history.
-- **Persistent State:** Scanned images and extracted text persist across tab switches without resetting.
+- **Rich Output Actions:** Displays Romanization alongside translated text with one-tap **Speak (TTS)**, **Copy**, **Fullscreen**, and **Share**.
+- **Live History Sync:** Scanned text translations automatically persist to SQLite and immediately appear in the History tab.
 
 ### **⭐ Translation History & Starred Hub**
 - **3-Way Hub Toggle:** Segmented button switching between `[ All History | Saved Starred | Phrasebook 📖 ]`.
-- **Automatic SQLite Persistence:** Translations from text, voice conversation, and image OCR modes automatically persist to local SQLite database storage (`sqflite`).
+- **Real-Time SQLite Persistence:** Translations from text, voice conversation, and image OCR modes automatically persist (`sqflite`) and sync live via `DatabaseService.onChanges`.
 - **Swipe-to-Delete with Confirmation & Undo:** Sliding any history card displays an alert confirmation dialog before deletion, with an instant undo action snackbar.
-- **Export to Plain Text & CSV:** Quick export buttons in History and Home AppBars to share or backup translation history via the system share sheet (`share_plus`).
+- **Export to Plain Text:** Quick export buttons in History and Home AppBars to share or backup translation history via the system share sheet (`share_plus`).
 
 ### **⚙️ Settings & Persistent Preferences**
-- **Persistent Preferences:** Automatically saves and restores last chosen language pairs, voice speed, pitch, voice style, and theme mode using `shared_preferences`.
-- **Material 3 Dynamic Theming:** Full support for Light and Dark modes with automatic contrast adjustments.
-- **Customizable Speech Engine:** Adjust speech rate (0.5x–2.0x), voice pitch, and voice models (Male, Female, Robot) with a live test preview.
-- **Overflow-Free About & FAQ:** Expandable FAQ accordion and support links.
+- **3-Way Material 3 Theme Selector:** Choose between **System**, **Light**, and **Dark** themes with automatic contrast adjustments.
+- **Offline Language Pack Manager:** Manage on-device ML Kit models and offline preferences directly from Settings.
+- **Persistent Preferences:** Automatically saves and restores last chosen language pairs, Instant Auto-Translate, offline preferences, voice speed, pitch, voice style, and theme mode using `shared_preferences`.
+- **Customizable Speech Engine:** Adjust speech rate (0.5x–2.0x), voice pitch, and voice models (Natural, Male, Female, Robot) with a live test preview.
+- **Overflow-Free About & FAQ:** Expandable FAQ accordion covering Text, Conversation, Camera OCR, and History.
 
 ---
 
@@ -76,8 +84,9 @@
 | **Frontend Framework** | Flutter 3.6+ / Dart 3.6+ |
 | **Design System** | Material 3 (`useMaterial3: true`, dynamic seed color palettes) |
 | **State Management** | Provider 6.1.2 |
-| **Translation Engine** | 3-Tier Multi-Fallback (`translator` + Google GTX & Chrome Dict APIs) |
-| **OCR Engine** | Google ML Kit Text Recognition (`google_mlkit_text_recognition`) |
+| **Translation Engine** | 4-Tier Multi-Fallback (Google GTX + Romanization, `translator`, Chrome Dict, ML Kit Offline) |
+| **Offline Translation** | Google ML Kit On-Device Translation (`google_mlkit_translation` 0.13.1) |
+| **OCR Engine** | Google ML Kit Text Recognition (`google_mlkit_text_recognition` 0.15.1) |
 | **Speech Recognition (STT)** | `speech_to_text` 7.0.0 (with `SpeechListenOptions`) |
 | **Text-to-Speech (TTS)** | `flutter_tts` 4.2.2 (with slow 0.52x and normal rates) |
 | **Local Persistence** | `shared_preferences` 2.3.2 & `sqflite` 2.4.1 |
@@ -107,7 +116,8 @@ lib/
 │   ├── history_screen.dart           # 3-way hub: History, Saved phrases & Phrasebook
 │   ├── phrasebook_screen.dart        # Standalone & embedded Travel Phrasebook view
 │   ├── fullscreen_text_screen.dart   # High-contrast fullscreen flashcard display
-│   ├── setting_screen.dart           # Appearance, speech settings, and app info
+│   ├── setting_screen.dart           # 3-way theme selector, offline & speech settings
+│   ├── offline_languages_screen.dart # On-device ML Kit language pack manager & toggles
 │   ├── speechsetting_screen.dart     # Pitch, rate, voice model, and language config
 │   ├── abouthelp_screen.dart         # Expandable FAQs and support
 │   └── welcome_screen.dart           # Onboarding splash screen
@@ -117,8 +127,9 @@ lib/
 │   ├── image_text_provider.dart      # OCR scanning and recognition pipeline
 │   └── theme_provider.dart           # Theme mode management & persistence
 ├── services/                          # Core Business Logic
-│   ├── translator_service.dart       # 3-tier resilient translation engine (with Auto-Detect)
-│   ├── database_service.dart         # SQLite CRUD & database helper
+│   ├── translator_service.dart       # 4-tier resilient engine (Romanization, Auto-Detect, Offline)
+│   ├── offline_translation_service.dart # ML Kit on-device model manager & offline translator
+│   ├── database_service.dart         # SQLite CRUD & live change stream (`onChanges`)
 │   ├── text_recognition_service.dart # ML Kit on-device text recognizer
 │   └── speech_service.dart           # STT, TTS (with slow 0.52x mode) & voice styles
 ├── component/                         # Reusable UI Widgets
@@ -147,8 +158,9 @@ TalkTranslo maintains a 100% passing test suite across unit, widget, and live se
 | `test/preferences_persistence_test.dart` | Verifies settings serialization and persistence across simulated restarts. |
 | `test/speech_utils_test.dart` | Validates BCP-47 locale resolution (`getTtsLocale`) and voice normalizations. |
 | `test/speech_screen_test.dart` | Verifies 180° Face-to-Face rotation, in-card microphones, and central divider toolbar. |
+| `test/offline_translation_test.dart` | Verifies ML Kit language mapping, online-only partitioning, and `OfflineLanguagesScreen` UI. |
 | `test/phrasebook_test.dart` | Tests survival phrase data, category filtering, search, and History tab switching. |
-| `test/translation_service_test.dart` | Live integration tests translating across English, Kannada, Hindi, and Spanish. |
+| `test/translation_service_test.dart` | Live integration tests for translation, Romanization, Auto-Detect, swap, and OCR state. |
 | `test/widget_test.dart` | Smoke tests verifying onboarding navigation and HomeScreen shell rendering. |
 
 To run the complete test suite:
@@ -177,6 +189,13 @@ For architectural roadmaps and future plans, see [FUTURE_ROADMAP.md](FUTURE_ROAD
   - [x] Clipboard Quick-Translate Banner.
   - [x] Slow Pronunciation Mode (🐢 0.6x).
   - [x] Graceful Offline Status Banner & Phrasebook Fallback.
+- [x] **Tier 3 Standout Features & Offline Engine:**
+  - [x] True On-Device Offline Translation (`google_mlkit_translation`) with user-controlled `OfflineLanguagesScreen` (Auto Fallback, Prefer Offline, Wi-Fi Only).
+  - [x] Pronunciation / Romanization Guide (`&dt=rm`) across Translate, Fullscreen, and Camera OCR.
+  - [x] Instant Debounced Auto-Translate (`Instant ⚡`) toggle.
+  - [x] Editable OCR Extracted Text + Fullscreen & Share actions.
+  - [x] Material 3 3-Way Theme Selector (`System | Light | Dark`).
+  - [x] Full Korean support across Text, Speech, and OCR + real-time SQLite History sync.
 - [x] **Release Readiness (Production Hardening):** Production package rename (`com.talktranslo.app`), app label formatting (`TalkTranslo`), custom ProGuard / R8 code & resource shrinking rules (`proguard-rules.pro`), and verified release APK compilation (`app-release.apk`).
 
 ---
