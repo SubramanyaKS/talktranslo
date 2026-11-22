@@ -1,6 +1,6 @@
 # 🗺️ TalkTranslo - Project Upgrade & Future Roadmap
 
-**Document Version:** 2.4  
+**Document Version:** 2.5  
 **Target Platform:** Flutter (Android & iOS)  
 **Last Audit Date:** November 2026  
 
@@ -25,8 +25,8 @@
 - **Material 3 Design:** Full M3 navigation shell, dynamic color schemes, interactive search modal bottom sheets with flag emojis, and animated language swapping.
 - **Persistence & History:** Local SQLite database persistence, Starred Phrases, plain text and CSV history export via `share_plus`, and swipe-to-delete with confirmation.
 - **Image OCR Isolation:** Integrated `image_cropper` for aspect-ratio cropping, rotation, and text isolation across Latin, Devanagari, Chinese, Japanese, and Korean scripts.
-- **High-Impact Standout Features:** Auto-Detect language ("Auto Detect ✨"), Tabletop Face-to-Face 180° Inverted mode, Offline Travel & Survival Phrasebook, Fullscreen Traveler mode, Clipboard Quick-Translate banner, and Slow Pronunciation mode (🐢 0.6x).
-- **Test Coverage:** 26 automated unit, widget, and live service tests with 100% pass rate.
+- **High-Impact Standout Features:** True On-Device Offline Translation (`google_mlkit_translation` + user-controlled `OfflineLanguagesScreen`), Pronunciation/Romanization Guide, Instant Debounced Auto-Translate, Editable OCR Text + Fullscreen/Share, 3-Way `System | Light | Dark` Theme Selector, Auto-Detect language ("Auto Detect ✨" with detected badge & smart swap), Tabletop Face-to-Face 180° Inverted mode, Offline Travel & Survival Phrasebook, Clipboard Quick-Translate on resume, and Slow Pronunciation mode (🐢 0.6x).
+- **Test Coverage:** 33 automated unit, widget, and live service tests with 100% pass rate and 0 static analysis issues.
 
 ---
 
@@ -101,10 +101,24 @@
   - [x] Tactile haptic feedback across all actions.
 - [x] **Phase 6: Production Store Setup & Release Hardening**
   - [x] Change Android application ID from `com.example.talktranslo` to production ID (`com.talktranslo.app`).
-  - [x] Set formatted app display name `"TalkTranslo"` in `AndroidManifest.xml`.
+  - [x] Set formatted app display name `"TalkTranslo"` in `AndroidManifest.xml` and `ios/Runner/Info.plist`.
   - [x] Configure ProGuard / R8 keep rules in `proguard-rules.pro`.
-  - [x] Set up release signing configuration and R8 code & resource shrinking.
-  - [x] Verify release build (`flutter build apk --release` -> 85.4MB production binary).
+  - [x] Set up release R8 code & resource shrinking and verify release build (`flutter build apk --release`).
+- [x] **Phase 7: Bug Fixes, Standout Upgrades & True Offline Engine**
+  - [x] Real-time SQLite History sync (`DatabaseService.onChanges`) for Voice & OCR auto-saves.
+  - [x] Safe `speakerALanguage` handling when `Auto Detect` is selected before opening Conversation mode.
+  - [x] Auto-Detect language badge (`✨ Detected`), detected-language input TTS, and smart language swap.
+  - [x] Clipboard Quick-Translate re-check on `AppLifecycleState.resumed`.
+  - [x] Full Korean language, speech, TTS, and OCR script support.
+  - [x] Pronunciation / Romanization Guide (`&dt=rm`) across Translate, Fullscreen, and OCR.
+  - [x] Instant Debounced Auto-Translate (`Instant ⚡`) toggle with persistence.
+  - [x] Editable OCR extracted text + Fullscreen & Share buttons on Camera OCR.
+  - [x] Material 3 3-Way Theme Selector (`System | Light | Dark`).
+  - [x] True On-Device Offline Translation (`google_mlkit_translation`) with user-controlled `OfflineLanguagesScreen`.
+- [ ] **Phase 8: Final Google Play Store Submission**
+  - [ ] Generate production upload keystore & configure `android/key.properties`.
+  - [ ] Add custom app launcher icon (`flutter_launcher_icons`) and native splash screen (`flutter_native_splash`).
+  - [ ] Build Android App Bundle (`flutter build appbundle --release`) and publish Privacy Policy URL.
 
 ---
 

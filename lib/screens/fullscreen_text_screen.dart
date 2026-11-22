@@ -9,12 +9,14 @@ class FullscreenTextScreen extends StatelessWidget {
     required this.targetLanguage,
     required this.sourceText,
     required this.onSpeak,
+    this.transliteration,
   });
 
   final String translatedText;
   final String targetLanguage;
   final String sourceText;
   final VoidCallback onSpeak;
+  final String? transliteration;
 
   void _copyText(BuildContext context) {
     Clipboard.setData(ClipboardData(text: translatedText));
@@ -94,17 +96,34 @@ class FullscreenTextScreen extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
-                    child: SelectableText(
-                      translatedText,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: translatedText.length > 80
-                            ? 28
-                            : (translatedText.length > 30 ? 36 : 46),
-                        fontWeight: FontWeight.bold,
-                        height: 1.3,
-                        color: colorScheme.primary,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SelectableText(
+                          translatedText,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: translatedText.length > 80
+                                ? 28
+                                : (translatedText.length > 30 ? 36 : 46),
+                            fontWeight: FontWeight.bold,
+                            height: 1.3,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        if (transliteration != null && transliteration!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          SelectableText(
+                            transliteration!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontStyle: FontStyle.italic,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/history_item.dart';
 import '../services/database_service.dart';
 
 class HistoryProvider with ChangeNotifier {
   final DatabaseService _dbService = DatabaseService.instance;
+  StreamSubscription<void>? _dbChangesSub;
 
   List<TranslationHistoryItem> _allItems = [];
   bool _isLoading = false;
@@ -12,6 +14,15 @@ class HistoryProvider with ChangeNotifier {
 
   HistoryProvider() {
     loadHistory();
+    _dbChangesSub = _dbService.onChanges.listen((_) {
+      loadHistory();
+    });
+  }
+
+  @override
+  void dispose() {
+    _dbChangesSub?.cancel();
+    super.dispose();
   }
 
   bool get isLoading => _isLoading;
@@ -69,7 +80,7 @@ class HistoryProvider with ChangeNotifier {
     );
 
     try {
-      final id = await _dbService.insertTranslation(item);
+      final id = await _dbService.insertTranslation(item, notify: false);
       final newItem = item.copyWith(id: id);
 
       // Remove existing matching entry if present to place it at the top
@@ -115,7 +126,7 @@ class HistoryProvider with ChangeNotifier {
 
   Future<void> restoreItem(TranslationHistoryItem item) async {
     try {
-      final id = await _dbService.insertTranslation(item);
+      final id = await _dbService.insertTranslation(item, notify: false);
       _allItems.insert(0, item.copyWith(id: id));
       notifyListeners();
     } catch (e) {

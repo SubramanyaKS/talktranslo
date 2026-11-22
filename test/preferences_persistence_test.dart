@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talktranslo/provider/theme_provider.dart';
@@ -24,6 +25,12 @@ void main() {
       final themeProvider2 = ThemeProvider();
       await Future.delayed(const Duration(milliseconds: 50));
       expect(themeProvider2.isDarkMode, isTrue);
+
+      // Set to System theme and verify persistence
+      await themeProvider2.setThemeMode(ThemeMode.system);
+      final themeProvider3 = ThemeProvider();
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(themeProvider3.themeMode, equals(ThemeMode.system));
     });
 
     test('TranslationProvider persists and reloads language and speech preferences', () async {
@@ -36,6 +43,9 @@ void main() {
       await provider1.selectSpeedRate(1.5);
       await provider1.selectPitch(1.2);
       await provider1.selectVoice('female');
+      await provider1.setAutoTranslate(true);
+      await provider1.setOfflineFallbackEnabled(false);
+      await provider1.setPreferOfflineMode(true);
 
       // Instantiate a new TranslationProvider to simulate app restart
       final provider2 = TranslationProvider();
@@ -46,6 +56,9 @@ void main() {
       expect(provider2.speechRate, equals(1.5));
       expect(provider2.pitch, equals(1.2));
       expect(provider2.selectedVoice, equals('female'));
+      expect(provider2.autoTranslate, isTrue);
+      expect(provider2.offlineFallbackEnabled, isFalse);
+      expect(provider2.preferOfflineMode, isTrue);
     });
 
     test('TranslationProvider normalizes legacy voice preference string to valid voice', () async {

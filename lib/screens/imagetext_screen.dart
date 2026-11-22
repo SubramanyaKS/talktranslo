@@ -3,13 +3,28 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../component/custom_dropdown.dart';
 import '../provider/image_text_provider.dart';
 import '../provider/translator_provider.dart';
 import '../utils/language.dart';
+import 'fullscreen_text_screen.dart';
 
-class ImageTextScreen extends StatelessWidget {
+class ImageTextScreen extends StatefulWidget {
   const ImageTextScreen({super.key});
+
+  @override
+  State<ImageTextScreen> createState() => _ImageTextScreenState();
+}
+
+class _ImageTextScreenState extends State<ImageTextScreen> {
+  final TextEditingController _scannedController = TextEditingController();
+
+  @override
+  void dispose() {
+    _scannedController.dispose();
+    super.dispose();
+  }
 
   void _copyToClipboard(BuildContext context, String text) async {
     if (text.trim().isEmpty) return;
@@ -25,6 +40,35 @@ class ImageTextScreen extends StatelessWidget {
     );
   }
 
+  void _shareTranslation(String sourceText, String translatedText) {
+    if (translatedText.trim().isEmpty) return;
+    HapticFeedback.lightImpact();
+    Share.share(
+      '$sourceText\n\n→ $translatedText\n\n(Translated with TalkTranslo)',
+      subject: 'OCR Translation from TalkTranslo',
+    );
+  }
+
+  void _openFullscreen(BuildContext context, ImageTextProvider provider) {
+    if (provider.translatedText.trim().isEmpty) return;
+    HapticFeedback.lightImpact();
+    final transProvider = Provider.of<TranslationProvider>(context, listen: false);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FullscreenTextScreen(
+          translatedText: provider.translatedText,
+          targetLanguage: provider.translationLanguage,
+          sourceText: provider.scannedText,
+          transliteration: provider.translatedTransliteration,
+          onSpeak: () => transProvider.speakCustomText(
+            provider.translatedText,
+            provider.translationLanguage,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -34,6 +78,13 @@ class ImageTextScreen extends StatelessWidget {
       body: SafeArea(
         child: Consumer<ImageTextProvider>(
           builder: (context, provider, child) {
+            if (_scannedController.text != provider.scannedText) {
+              _scannedController.value = TextEditingValue(
+                text: provider.scannedText,
+                selection: TextSelection.collapsed(offset: provider.scannedText.length),
+              );
+            }
+
             // FULL SCREEN LOADING
             if (provider.textScanning) {
               return Center(
@@ -311,29 +362,55 @@ class ImageTextScreen extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Extracted Text',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: colorScheme.primary,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Extracted Text',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '(Editable)',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: theme.hintColor,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.copy_rounded, size: 18),
                                   tooltip: 'Copy extracted text',
                                   color: colorScheme.onSurfaceVariant,
-                                  onPressed: () => _copyToClipboard(context, provider.scannedText),
+                                  onPressed: () => _copyToClipboard(context, _scannedController.text),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 6),
-                            SelectableText(
-                              provider.scannedText,
+                            TextField(
+                              controller: _scannedController,
+                              minLines: 2,
+                              maxLines: 8,
+                              onChanged: provider.updateScannedText,
                               style: TextStyle(
                                 fontSize: 16,
                                 height: 1.4,
                                 color: colorScheme.onSurface,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Edit extracted text before translating...',
+                                isDense: true,
+                                filled: true,
+                                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                                contentPadding: const EdgeInsets.all(10),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -389,6 +466,7 @@ class ImageTextScreen extends StatelessWidget {
                                 Row(
                                   children: [
                                     IconButton(
+                                      visualDensity: VisualDensity.compact,
                                       icon: const Icon(Icons.volume_up_rounded, size: 20),
                                       tooltip: 'Listen pronunciation',
                                       color: colorScheme.primary,
@@ -401,11 +479,29 @@ class ImageTextScreen extends StatelessWidget {
                                       },
                                     ),
                                     IconButton(
+                                      visualDensity: VisualDensity.compact,
                                       icon: const Icon(Icons.copy_rounded, size: 18),
                                       tooltip: 'Copy translated text',
                                       color: colorScheme.primary,
                                       onPressed: () =>
                                           _copyToClipboard(context, provider.translatedText),
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.fullscreen_rounded, size: 20),
+                                      tooltip: 'Fullscreen view',
+                                      color: colorScheme.primary,
+                                      onPressed: () => _openFullscreen(context, provider),
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.share_rounded, size: 18),
+                                      tooltip: 'Share translation',
+                                      color: colorScheme.primary,
+                                      onPressed: () => _shareTranslation(
+                                        provider.scannedText,
+                                        provider.translatedText,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -421,6 +517,18 @@ class ImageTextScreen extends StatelessWidget {
                                 color: colorScheme.primary,
                               ),
                             ),
+                            if (provider.translatedTransliteration != null &&
+                                provider.translatedTransliteration!.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              SelectableText(
+                                provider.translatedTransliteration!,
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontStyle: FontStyle.italic,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

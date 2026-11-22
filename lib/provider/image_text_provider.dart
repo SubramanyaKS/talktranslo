@@ -15,7 +15,8 @@ class ImageTextProvider with ChangeNotifier {
   XFile? _imageFile;
   String _scannedText = '';
   bool _textScanning = false;
-  String _translatedText ='';
+  String _translatedText = '';
+  String? _translatedTransliteration;
   String _translationLanguage = 'kn';
   String _sourceLanguage = 'English'; // Language to detect from image
   String _sourceScript = 'latin'; // Script for text recognition
@@ -24,13 +25,19 @@ class ImageTextProvider with ChangeNotifier {
   String get scannedText => _scannedText;
   bool get textScanning => _textScanning;
   String get translatedText => _translatedText;
-  String get translationLanguage =>_translationLanguage;
+  String? get translatedTransliteration => _translatedTransliteration;
+  String get translationLanguage => _translationLanguage;
   String get sourceLanguage => _sourceLanguage;
   String get sourceScript => _sourceScript;
 
+  void updateScannedText(String value) {
+    _scannedText = value;
+  }
+
   Future<void> translateText() async {
-    if (_scannedText.isEmpty) {
+    if (_scannedText.trim().isEmpty) {
       _translatedText = '';
+      _translatedTransliteration = null;
       notifyListeners();
       return;
     }
@@ -39,9 +46,13 @@ class ImageTextProvider with ChangeNotifier {
       _textScanning = true;
       notifyListeners();
 
-      final translatedText =
-          await _translationService.translateText(_scannedText, _translationLanguage);
-      _translatedText = translatedText;
+      final result = await _translationService.translateWithDetails(
+        _scannedText,
+        _translationLanguage,
+        sourceLanguage: _sourceLanguage,
+      );
+      _translatedText = result.text;
+      _translatedTransliteration = result.transliteration;
       _textScanning = false;
       notifyListeners();
 
@@ -50,7 +61,7 @@ class ImageTextProvider with ChangeNotifier {
         await DatabaseService.instance.insertTranslation(
           TranslationHistoryItem(
             sourceText: _scannedText,
-            translatedText: translatedText,
+            translatedText: result.text,
             sourceLang: _sourceLanguage,
             targetLang: _translationLanguage,
             timestamp: DateTime.now(),
@@ -61,6 +72,7 @@ class ImageTextProvider with ChangeNotifier {
       }
     } catch (e) {
       _translatedText = 'Translation error: $e';
+      _translatedTransliteration = null;
       _textScanning = false;
       debugPrint('Translation error: $e');
       notifyListeners();
@@ -223,6 +235,7 @@ class ImageTextProvider with ChangeNotifier {
     _imageFile = null;
     _scannedText = '';
     _translatedText = '';
+    _translatedTransliteration = null;
     _textScanning = false;
     notifyListeners();
   }

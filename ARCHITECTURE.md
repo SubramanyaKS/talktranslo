@@ -1,6 +1,6 @@
 # 🏗️ TalkTranslo - Software Architecture Document
 
-**System Version:** 2.4  
+**System Version:** 2.5  
 **Platform:** Flutter (Android & iOS)  
 **Target SDK:** Flutter 3.6+ / Dart 3.6+  
 **Design System:** Material 3 (M3)  
@@ -135,12 +135,14 @@ flowchart TD
 
 ## 4. Key Architectural Mechanisms & Workflows
 
-### 4.1 3-Tier Resilient Translation Engine with Auto-Detect
-Requests are routed through a waterfall failover pipeline:
-1. **Tier 1:** `translator` package (`from: sourceCode`, `to: targetCode`).
-2. **Tier 2 (Fallback 1):** Direct HTTP request to Google GTX Single API (`https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceCode&tl=$targetCode&dt=t&q=$encodedText`).
-3. **Tier 3 (Fallback 2):** Chrome Dictionary Client API (`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=$sourceCode&tl=$targetCode&q=$encodedText`).
-4. **Auto-Detect Support:** When source is `'auto'`, the engine passes `sl=auto` to the API. Language swapping is safely guarded against swapping into an auto-detect target.
+### 4.1 4-Tier Resilient Translation Engine with Romanization, Auto-Detect & True Offline Fallback
+Requests are routed through a waterfall failover pipeline via `translateWithDetails(...)` returning `TranslationResult(text, detectedSourceLanguage, transliteration, isOffline)`:
+1. **Optional Offline-First Short-Circuit:** If the user enables **Prefer Offline Mode** and both source/target ML Kit models are already downloaded, translation executes immediately on-device.
+2. **Tier 1:** Direct HTTP request to Google GTX Single API with Romanization (`&dt=t&dt=rm`), returning translation, detected ISO language code, and phonetic transliteration in one call.
+3. **Tier 2 (Fallback 1):** `translator` package (`from: sourceCode`, `to: targetCode`).
+4. **Tier 3 (Fallback 2):** Chrome Dictionary Client API (`https://clients5.google.com/translate_a/t?client=dict-chrome-ex...`).
+5. **Tier 4 (Automatic On-Device Offline Fallback):** If all network tiers fail and **Auto Offline Fallback** is enabled, `OfflineTranslationService` runs `OnDeviceTranslator` locally (only if both models were explicitly downloaded by the user—never silently downloads over cellular).
+6. **Auto-Detect Safety:** When source is `'auto'`, `detectedSourceLanguage` is surfaced as a badge, used for input TTS, and enables smart language swapping. Conversation mode uses a safe `speakerALanguage` getter that never passes `'auto'` to STT or `talklanguageMap`.
 
 ### 4.2 Tabletop Face-to-Face 180° Inverted Conversation Pipeline
 When two people sit opposite each other across a table or counter:
@@ -200,8 +202,9 @@ TalkTranslo maintains automated test coverage across unit, widget, and live serv
 | `test/preferences_persistence_test.dart` | `ThemeProvider`, `TranslationProvider` | Verifies settings serialization and persistence across simulated app restarts. |
 | `test/speech_utils_test.dart` | `language.dart` utilities | Validates BCP-47 locale resolution (`getTtsLocale`) and voice normalizations. |
 | `test/speech_screen_test.dart` | `SpeechScreen` | Verifies 180° Face-to-Face rotation, in-card microphones, and central divider toolbar. |
+| `test/offline_translation_test.dart` | `OfflineTranslationService`, `OfflineLanguagesScreen` | Verifies ML Kit language mapping, online-only partitioning, and offline manager UI. |
 | `test/phrasebook_test.dart` | `PhrasebookScreen` & `PhrasebookView` | Tests survival phrase data, category filtering, search, and History tab switching. |
-| `test/translation_service_test.dart` | `TranslationService` | Live integration tests translating across English, Kannada, Hindi, and Spanish with Auto-Detect. |
+| `test/translation_service_test.dart` | `TranslationService`, `TranslationProvider`, `ImageTextProvider` | Live integration tests for translation, Romanization, Auto-Detect, swap, `speakerALanguage`, and editable OCR state. |
 | `test/widget_test.dart` | App Shell (`MyApp`) | Smoke test verifying startup initialization and welcome screen rendering. |
 
 ---
@@ -223,7 +226,8 @@ lib/
 │   ├── history_screen.dart           # 3-way hub: History, Saved phrases & Phrasebook
 │   ├── phrasebook_screen.dart        # Standalone & embedded Travel Phrasebook view
 │   ├── fullscreen_text_screen.dart   # High-contrast fullscreen flashcard display
-│   ├── setting_screen.dart           # Appearance, voice settings & app info
+│   ├── setting_screen.dart           # 3-way M3 theme selector, offline & speech settings
+│   ├── offline_languages_screen.dart # On-device ML Kit language pack manager & toggles
 │   ├── speechsetting_screen.dart     # Pitch, speed, voice models & preview test
 │   ├── abouthelp_screen.dart         # Expandable FAQs & support information
 │   └── welcome_screen.dart           # First-launch onboarding splash
@@ -233,8 +237,9 @@ lib/
 │   ├── image_text_provider.dart      # OCR recognition & cropping pipeline
 │   └── theme_provider.dart           # Theme mode management & persistence
 ├── services/                          # Domain & business logic
-│   ├── translator_service.dart       # 3-tier resilient translation engine (with Auto-Detect)
-│   ├── database_service.dart         # SQLite CRUD & schema helper
+│   ├── translator_service.dart       # 4-tier resilient engine (Romanization, Auto-Detect, Offline)
+│   ├── offline_translation_service.dart # ML Kit on-device model manager & offline translator
+│   ├── database_service.dart         # SQLite CRUD & live `onChanges` broadcast stream
 │   ├── speech_service.dart           # STT, TTS (with slow 0.52x mode) & voice styles
 │   └── text_recognition_service.dart # Google ML Kit on-device recognizer
 ├── component/                         # Reusable UI widgets
