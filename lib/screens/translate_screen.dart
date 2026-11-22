@@ -19,7 +19,7 @@ class TranslateScreen extends StatefulWidget {
   State<TranslateScreen> createState() => _TranslateScreenState();
 }
 
-class _TranslateScreenState extends State<TranslateScreen> {
+class _TranslateScreenState extends State<TranslateScreen> with WidgetsBindingObserver {
   double _swapTurns = 0.0;
   bool _isTranslating = false;
   String? _clipboardText;
@@ -28,7 +28,21 @@ class _TranslateScreenState extends State<TranslateScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkClipboard();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkClipboard();
+    }
   }
 
   Future<void> _checkClipboard() async {
@@ -98,10 +112,11 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _handleSwap(TranslationProvider provider) {
-    if (provider.selectedLanguage == 'auto') {
+    if (provider.selectedLanguage == 'auto' &&
+        (provider.detectedSourceLanguage == null || provider.detectedSourceLanguage!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cannot swap languages when source is Auto Detect'),
+          content: Text('Translate text first to detect the language before swapping'),
           behavior: SnackBarBehavior.floating,
           duration: Duration(seconds: 2),
         ),
@@ -147,10 +162,15 @@ class _TranslateScreenState extends State<TranslateScreen> {
       setState(() => _isTranslating = false);
       if (success) {
         // Automatically save translation to local history database
+        final effectiveSourceLang = (provider.selectedLanguage == 'auto' &&
+                provider.detectedSourceLanguage != null &&
+                provider.detectedSourceLanguage!.isNotEmpty)
+            ? getTtsLocale(provider.detectedSourceLanguage!)
+            : provider.selectedLanguage;
         Provider.of<HistoryProvider>(context, listen: false).addTranslation(
           sourceText: text,
           translatedText: provider.translatedController.text,
-          sourceLang: provider.selectedLanguage,
+          sourceLang: effectiveSourceLang,
           targetLang: provider.translationLanguage,
         );
       } else if (offlineMatch != null) {
@@ -393,20 +413,54 @@ class _TranslateScreenState extends State<TranslateScreen> {
               // 📝 Input Card
               Consumer<TranslationProvider>(
                 builder: (context, provider, _) {
-                  return TextCard(
-                    controller: provider.inputController,
-                    hint: "Type text to translate...",
-                    editable: true,
-                    isListening: provider.isListening,
-                    onMicTap: provider.toggleListening,
-                    onCopy: () => _copyContent(provider.inputController.text),
-                    onSpeak: provider.speakInputText,
-                    onSpeakSlow: () => provider.speakInputText(isSlow: true),
-                    onClear: () {
-                      provider.inputController.clear();
-                      provider.translatedController.clear();
-                      setState(() {});
-                    },
+                  final detectedCode = provider.detectedSourceLanguage;
+                  final showDetectedPill = provider.selectedLanguage == 'auto' &&
+                      detectedCode != null &&
+                      detectedCode.isNotEmpty;
+                  final detectedName = showDetectedPill
+                      ? getLanguageNameFromValue(languageMap, detectedCode)
+                      : '';
+                  final detectedFlag = showDetectedPill ? getLanguageFlag(detectedName) : '';
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (showDetectedPill)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8, left: 4),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '✨ Detected: $detectedFlag $detectedName',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      TextCard(
+                        controller: provider.inputController,
+                        hint: "Type text to translate...",
+                        editable: true,
+                        isListening: provider.isListening,
+                        onMicTap: provider.toggleListening,
+                        onCopy: () => _copyContent(provider.inputController.text),
+                        onSpeak: provider.speakInputText,
+                        onSpeakSlow: () => provider.speakInputText(isSlow: true),
+                        onClear: () {
+                          provider.inputController.clear();
+                          provider.translatedController.clear();
+                          provider.detectedSourceLanguage = null;
+                          setState(() {});
+                        },
+                      ),
+                    ],
                   );
                 },
               ),

@@ -9,6 +9,9 @@ class DatabaseService {
 
   static Database? _database;
 
+  final StreamController<void> _changesController = StreamController<void>.broadcast();
+  Stream<void> get onChanges => _changesController.stream;
+
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
@@ -44,7 +47,7 @@ class DatabaseService {
     );
   }
 
-  Future<int> insertTranslation(TranslationHistoryItem item) async {
+  Future<int> insertTranslation(TranslationHistoryItem item, {bool notify = true}) async {
     final db = await database;
 
     // Check if the latest translation has identical text and language pair
@@ -67,15 +70,18 @@ class DatabaseService {
           where: 'id = ?',
           whereArgs: [latestItem.id],
         );
+        if (notify) _changesController.add(null);
         return latestItem.id!;
       }
     }
 
-    return await db.insert(
+    final id = await db.insert(
       'translations',
       item.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    if (notify) _changesController.add(null);
+    return id;
   }
 
   Future<List<TranslationHistoryItem>> getAllTranslations() async {

@@ -40,7 +40,8 @@ class _SpeechScreenState extends State<SpeechScreen> {
 
     return Consumer<TranslationProvider>(
       builder: (context, provider, _) {
-        final langAName = getLanguageNameFromValue(talklanguageMap, provider.selectedLanguage);
+        final langAValue = provider.speakerALanguage;
+        final langAName = getLanguageNameFromValue(talklanguageMap, langAValue);
         final langBName = getLanguageNameFromValue(languageMap, provider.translationLanguage);
         final flagA = getLanguageFlag(langAName);
         final flagB = getLanguageFlag(langBName);
@@ -145,7 +146,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                       speakerNum: 1,
                       speakerTitle: "Speaker 1 ($flagA)",
                       langName: langAName,
-                      langValue: provider.selectedLanguage,
+                      langValue: langAValue,
                       langMap: talklanguageMap,
                       onLanguageChanged: (val) {
                         if (val != null) provider.selectLanguage(val);

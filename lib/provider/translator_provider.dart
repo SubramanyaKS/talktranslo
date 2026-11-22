@@ -30,6 +30,21 @@ class TranslationProvider with ChangeNotifier {
 
   String? translationError;
   String? speechError;
+  String? detectedSourceLanguage;
+
+  /// Safe locale for Conversation Mode (Speaker A), which never returns 'auto'.
+  String get speakerALanguage {
+    if (selectedLanguage != 'auto' && talklanguageMap.containsValue(selectedLanguage)) {
+      return selectedLanguage;
+    }
+    if (detectedSourceLanguage != null && detectedSourceLanguage!.isNotEmpty) {
+      final ttsLocale = getTtsLocale(detectedSourceLanguage!);
+      if (talklanguageMap.containsValue(ttsLocale)) {
+        return ttsLocale;
+      }
+    }
+    return 'en-US';
+  }
 
   TranslationProvider() {
     _loadSavedPreferences();
@@ -103,6 +118,7 @@ class TranslationProvider with ChangeNotifier {
 
   Future<void> selectLanguage(dynamic language) async {
     selectedLanguage = language.toString();
+    detectedSourceLanguage = null;
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -157,17 +173,23 @@ class TranslationProvider with ChangeNotifier {
   }
 
   Future<void> swapLanguages() async {
-    // Cannot swap when source is set to Auto Detect
-    if (selectedLanguage == 'auto') return;
+    // Cannot swap when source is Auto Detect unless a language was detected
+    if (selectedLanguage == 'auto' &&
+        (detectedSourceLanguage == null || detectedSourceLanguage!.isEmpty)) {
+      return;
+    }
     HapticFeedback.lightImpact();
 
-    final sourceName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
+    final effectiveSource = selectedLanguage == 'auto'
+        ? getTtsLocale(detectedSourceLanguage!)
+        : selectedLanguage;
+    final sourceName = getLanguageNameFromValue(talklanguageMap, effectiveSource);
     final targetName = getLanguageNameFromValue(languageMap, translationLanguage);
 
     if (talklanguageMap.containsKey(targetName)) {
       selectedLanguage = talklanguageMap[targetName]!;
     } else if (targetName == 'English' || targetName.startsWith('English')) {
-      selectedLanguage = selectedLanguage == 'en-US' ? 'en-US' : 'en-IN';
+      selectedLanguage = effectiveSource == 'en-US' ? 'en-US' : 'en-IN';
     }
 
     if (languageMap.containsKey(sourceName)) {
@@ -175,6 +197,8 @@ class TranslationProvider with ChangeNotifier {
     } else if (sourceName.startsWith('English')) {
       translationLanguage = 'en';
     }
+
+    detectedSourceLanguage = null;
 
     final prevInput = inputController.text;
     final prevTranslated = translatedController.text;
@@ -199,12 +223,17 @@ class TranslationProvider with ChangeNotifier {
     try {
       translationError = null;
       notifyListeners();
-      final translatedText = await _translationService.translateText(
+      final result = await _translationService.translateWithDetails(
         text,
         translationLanguage,
         sourceLanguage: selectedLanguage,
       );
-      translatedController.text = translatedText;
+      translatedController.text = result.text;
+      if (selectedLanguage == 'auto') {
+        detectedSourceLanguage = result.detectedSourceLanguage;
+      } else {
+        detectedSourceLanguage = null;
+      }
       notifyListeners();
       return true;
     } catch (e) {
@@ -256,9 +285,14 @@ class TranslationProvider with ChangeNotifier {
 
   Future<void> speakInputText({bool isSlow = false}) async {
     if (inputController.text.trim().isEmpty) return;
+    final langToSpeak = (selectedLanguage == 'auto' &&
+            detectedSourceLanguage != null &&
+            detectedSourceLanguage!.isNotEmpty)
+        ? detectedSourceLanguage!
+        : selectedLanguage;
     await _speechService.speakText(
       inputController.text,
-      selectedLanguage,
+      langToSpeak,
       pitch,
       speechRate,
       selectedVoice,
@@ -353,7 +387,7 @@ class TranslationProvider with ChangeNotifier {
           translateSpeakerASpeech();
         }
       },
-      locale: selectedLanguage,
+      locale: speakerALanguage,
       onSoundLevelChange: _handleSoundLevelChange,
       onDone: () {
         if (activeSpeaker == 1) {
@@ -405,7 +439,7 @@ class TranslationProvider with ChangeNotifier {
           TranslationHistoryItem(
             sourceText: speakerASpeech,
             translatedText: res,
-            sourceLang: selectedLanguage,
+            sourceLang: speakerALanguage,
             targetLang: translationLanguage,
             timestamp: DateTime.now(),
           ),
@@ -498,7 +532,7 @@ class TranslationProvider with ChangeNotifier {
     try {
       isTranslatingSpeech = true;
       notifyListeners();
-      final sourceLangName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
+      final sourceLangName = getLanguageNameFromValue(talklanguageMap, speakerALanguage);
       final targetCode = languageMap[sourceLangName] ?? 'en';
       final res = await _translationService.translateText(
         speakerBSpeech,
@@ -542,7 +576,7 @@ class TranslationProvider with ChangeNotifier {
 
   Future<void> speakSpeakerBTranslation() async {
     if (speakerBTranslation.trim().isEmpty) return;
-    final sourceLangName = getLanguageNameFromValue(talklanguageMap, selectedLanguage);
+    final sourceLangName = getLanguageNameFromValue(talklanguageMap, speakerALanguage);
     final targetCode = languageMap[sourceLangName] ?? 'en';
     await _speechService.speakText(
       speakerBTranslation,
@@ -610,6 +644,8 @@ class TranslationProvider with ChangeNotifier {
         return "Hallo, dies ist ein Sprachtest für TalkTranslo.";
       case 'ja':
         return "こんにちは、これはTalkTransloの音声テストです。";
+      case 'ko':
+        return "안녕하세요, TalkTranslo 음성 테스트입니다.";
       case 'zh-cn':
         return "您好，这是TalkTranslo的语音测试。";
       case 'ta':

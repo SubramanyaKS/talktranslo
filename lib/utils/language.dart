@@ -13,6 +13,7 @@ final Map<String, String> languageMap = {
   'Japanese':'ja',
   'Kannada': 'kn',
   'Konkani':'gom',
+  'Korean': 'ko',
   'Malayalam':'ml',
   'Russian':'ru',
   'Sanskrit':'sa',
@@ -38,6 +39,7 @@ final Map<String, String> talklanguageMap = {
   'Japanese':'ja-JP',
   'Kannada': 'kn-IN',
   'Konkani':'gom-IN',
+  'Korean': 'ko-KR',
   'Malayalam':'ml-IN',
   'Russian':'ru-RU',
   'Sanskrit':'sa-IN',
@@ -111,10 +113,11 @@ String getTtsLocale(String input) {
 
 
 final List<Map<String,String>> questionAnswer =[
-{"Q":"How do I translate text?","A":"Simply enter text and press 'Translate' button."},
-{"Q": "How do I enable speech translation","A":"Go to 'Speech' tab and clic the mic button and select the language."},
-  {"Q":"How to hear translated text?","A":"Click on 'Volume Icon' to hear the translated text"},
-  {"Q":"Is there any way to copy translated text?","A":"Yes, there is option to copy translated text to clipboard"}
+  {"Q": "How do I translate text?", "A": "Enter or paste text on the Translate tab and tap 'Translate'. You can also select 'Auto Detect' to automatically identify the source language."},
+  {"Q": "How do I use Voice Conversation?", "A": "Open the Conversation tab, choose both speakers' languages, and tap either microphone button. Enable 'Face-to-Face Mode' to rotate Speaker 1's card 180° for tabletop conversations."},
+  {"Q": "How do I translate text from an image?", "A": "Go to the Camera OCR tab, choose the source script, and capture a photo or pick one from your gallery. Use 'Crop / Rotate' to focus on specific text."},
+  {"Q": "How do I hear translated text or slow pronunciation?", "A": "Tap the speaker icon to hear normal playback, or tap the slow-speed icon for slower pronunciation. You can customize voice pitch, speed, and style in Settings."},
+  {"Q": "How do I save or export translations?", "A": "Translations are automatically saved to your History tab. Tap the star icon to save favorites, or use the Share icon to export your history."},
 ];
 
 // Script mapping: Language -> TextRecognitionScript
@@ -135,6 +138,7 @@ final Map<String, String> languageToScript = {
   'Japanese': 'japanese',
   'Kannada': 'devanagari',
   'Konkani': 'devanagari',
+  'Korean': 'korean',
   'Malayalam': 'devanagari',
   'Russian': 'latin',
   'Sanskrit': 'devanagari',

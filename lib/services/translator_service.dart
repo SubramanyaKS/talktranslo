@@ -4,6 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:translator/translator.dart';
 
+class TranslationResult {
+  final String text;
+  final String? detectedSourceLanguage;
+
+  const TranslationResult({
+    required this.text,
+    this.detectedSourceLanguage,
+  });
+}
+
 class TranslationService {
   final GoogleTranslator _translator = GoogleTranslator();
 
@@ -20,8 +30,17 @@ class TranslationService {
   }
 
   Future<String> translateText(String text, String targetLanguage, {String sourceLanguage = 'auto'}) async {
+    final result = await translateWithDetails(text, targetLanguage, sourceLanguage: sourceLanguage);
+    return result.text;
+  }
+
+  Future<TranslationResult> translateWithDetails(
+    String text,
+    String targetLanguage, {
+    String sourceLanguage = 'auto',
+  }) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty) return "";
+    if (trimmed.isEmpty) return const TranslationResult(text: "");
 
     final targetCode = normalizeLanguageCode(targetLanguage);
     final sourceCode = (sourceLanguage.isEmpty || sourceLanguage == 'auto')
@@ -34,7 +53,15 @@ class TranslationService {
           .translate(trimmed, from: sourceCode, to: targetCode)
           .timeout(const Duration(seconds: 8));
       if (translation.text.trim().isNotEmpty) {
-        return translation.text;
+        final detected = (sourceCode == 'auto' &&
+                translation.sourceLanguage.code.isNotEmpty &&
+                translation.sourceLanguage.code != 'auto')
+            ? translation.sourceLanguage.code
+            : null;
+        return TranslationResult(
+          text: translation.text,
+          detectedSourceLanguage: detected,
+        );
       }
     } catch (e) {
       debugPrint('Tier 1 (translator package) failed: $e. Trying Tier 2 fallback...');
@@ -56,7 +83,15 @@ class TranslationService {
             }
           }
           final result = buffer.toString().trim();
-          if (result.isNotEmpty) return result;
+          if (result.isNotEmpty) {
+            final detected = (sourceCode == 'auto' && data.length > 2 && data[2] is String)
+                ? data[2] as String
+                : null;
+            return TranslationResult(
+              text: result,
+              detectedSourceLanguage: detected,
+            );
+          }
         }
       }
     } catch (e) {
@@ -74,10 +109,22 @@ class TranslationService {
         if (data is List && data.isNotEmpty) {
           if (data[0] is List && (data[0] as List).isNotEmpty) {
             final result = data[0][0].toString().trim();
-            if (result.isNotEmpty) return result;
+            if (result.isNotEmpty) {
+              final detected = (sourceCode == 'auto' &&
+                      (data[0] as List).length > 1 &&
+                      data[0][1] is String)
+                  ? data[0][1] as String
+                  : null;
+              return TranslationResult(
+                text: result,
+                detectedSourceLanguage: detected,
+              );
+            }
           } else if (data[0] is String) {
             final result = data[0].toString().trim();
-            if (result.isNotEmpty) return result;
+            if (result.isNotEmpty) {
+              return TranslationResult(text: result);
+            }
           }
         }
       }

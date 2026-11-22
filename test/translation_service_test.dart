@@ -49,8 +49,9 @@ void main() {
     });
 
     test('Translates with auto-detected source language', () async {
-      final result = await service.translateText('Gracias amigo', 'en', sourceLanguage: 'auto');
-      expect(result.toLowerCase(), contains('thank'));
+      final result = await service.translateWithDetails('Gracias amigo', 'en', sourceLanguage: 'auto');
+      expect(result.text.toLowerCase(), contains('thank'));
+      expect(result.detectedSourceLanguage, equals('es'));
     });
   });
 
@@ -101,6 +102,32 @@ void main() {
       expect(provider.translationLanguage, equals('kn'));
       expect(provider.inputController.text, equals('Hello'));
       expect(provider.translatedController.text, equals('ನಮಸ್ಕಾರ'));
+    });
+
+    test('Swapping languages works when selectedLanguage is auto and detectedSourceLanguage is set', () {
+      final provider = TranslationProvider();
+      provider.selectedLanguage = 'auto';
+      provider.detectedSourceLanguage = 'es';
+      provider.translationLanguage = 'en';
+      provider.inputController.text = 'Hola';
+      provider.translatedController.text = 'Hello';
+
+      provider.swapLanguages();
+
+      expect(provider.selectedLanguage, equals('en-IN'));
+      expect(provider.translationLanguage, equals('es'));
+      expect(provider.detectedSourceLanguage, isNull);
+      expect(provider.inputController.text, equals('Hello'));
+      expect(provider.translatedController.text, equals('Hola'));
+    });
+
+    test('speakerALanguage safely resolves auto to a valid talklanguageMap locale', () {
+      final provider = TranslationProvider();
+      provider.selectedLanguage = 'auto';
+      expect(provider.speakerALanguage, equals('en-US'));
+
+      provider.detectedSourceLanguage = 'kn';
+      expect(provider.speakerALanguage, equals('kn-IN'));
     });
 
     test('translateSourceLanguageMap contains Auto Detect as first option', () {

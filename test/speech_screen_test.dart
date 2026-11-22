@@ -67,4 +67,25 @@ void main() {
     expect(find.text('Face-to-Face Mode'), findsOneWidget);
     expect(find.text('Conversation'), findsOneWidget);
   });
+
+  testWidgets('SpeechScreen renders safely when TranslationProvider selectedLanguage is auto',
+      (WidgetTester tester) async {
+    final provider = TranslationProvider();
+    provider.selectedLanguage = 'auto';
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<TranslationProvider>.value(value: provider),
+        ],
+        child: const MaterialApp(
+          home: SpeechScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Face-to-Face Mode'), findsOneWidget);
+    expect(find.textContaining('English (US)'), findsWidgets);
+  });
 }

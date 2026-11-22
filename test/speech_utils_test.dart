@@ -59,5 +59,12 @@ void main() {
       expect(getLanguageFlag('English (India)'), equals('🇮🇳'));
       expect(getLanguageFlag('English (US)'), equals('🇺🇸'));
     });
+    test('Korean language, speech locale, TTS locale, flag, and OCR script are properly mapped', () {
+      expect(languageMap['Korean'], equals('ko'));
+      expect(talklanguageMap['Korean'], equals('ko-KR'));
+      expect(languageToScript['Korean'], equals('korean'));
+      expect(getTtsLocale('ko'), equals('ko-KR'));
+      expect(getLanguageFlag('Korean'), equals('🇰🇷'));
+    });
   });
 }
